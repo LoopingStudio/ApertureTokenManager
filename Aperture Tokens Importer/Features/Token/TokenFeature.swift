@@ -10,7 +10,10 @@ public struct TokenFeature: Sendable {
   public struct State: Equatable {
     var rootNodes: [TokenNode]
     var isFileLoaded: Bool
+    var isLoading: Bool
     var loadingError: Bool
+    var errorMessage: String?
+    var metadata: TokenMetadata?
     var selectedNode: TokenNode?
     var expandedNodes: Set<TokenNode.ID> = []
     var allNodes: [TokenNode] = []
@@ -26,7 +29,10 @@ public struct TokenFeature: Sendable {
       .init(
         rootNodes: [],
         isFileLoaded: false,
+        isLoading: false,
         loadingError: false,
+        errorMessage: nil,
+        metadata: nil,
         selectedNode: nil,
         expandedNodes: [],
         allNodes: [],
@@ -46,7 +52,9 @@ public struct TokenFeature: Sendable {
     @CasePathable
     public enum Internal: Sendable, Equatable {
       case loadFile(URL)
-      case nodesLoaded([TokenNode])
+      case exportLoaded(TokenExport)
+      case fileLoadingStarted
+      case fileLoadingFailed(String)
       case applyFilters
     }
 
@@ -55,6 +63,7 @@ public struct TokenFeature: Sendable {
       case exportButtonTapped
       case fileDroppedWithProvider(NSItemProvider)
       case selectFileTapped
+      case resetFile
       case selectNode(TokenNode)
       case toggleNode(TokenNode.ID)
       case expandNode(TokenNode.ID)

@@ -9,13 +9,13 @@ struct CompareView: View {
   var body: some View {
     VStack(spacing: 0) {
       header
-      if store.comparison != nil {
+      if store.changes != nil {
         comparisonContent
       } else {
         fileSelectionArea
       }
     }
-    .frame(minWidth: 800, minHeight: 600)
+    .animation(.easeInOut, value: store.isOldFileLoaded && store.isNewFileLoaded)
   }
   
   private var header: some View {
@@ -27,11 +27,13 @@ struct CompareView: View {
         
         Spacer()
         
-        if store.comparison != nil {
-          Button("Nouvelle Comparaison") {
-            send(.resetComparison)
-          }
-          .controlSize(.small)
+        if store.changes != nil {
+          Button("Nouvelle Comparaison") { send(.resetComparison) }
+            .controlSize(.small)
+          
+          Button("Exporter pour Notion") { send(.exportToNotionTapped) }
+            .controlSize(.small)
+            .buttonStyle(.borderedProminent)
         }
       }
       
@@ -47,88 +49,73 @@ struct CompareView: View {
   }
   
   private var fileSelectionArea: some View {
-    HStack(spacing: 24) {
-      fileDropZone(
-        title: "Ancienne Version",
-        subtitle: "Glissez le fichier JSON de l'ancienne version ici",
-        isLoaded: store.isOldFileLoaded,
-        onDrop: { providers in
-          guard let provider = providers.first else { return false }
-          send(.fileDroppedWithProvider(.old, provider))
-          return true
-        },
-        onSelectFile: { send(.selectFileTapped(.old)) }
-      )
-      
-      Image(systemName: "arrow.right")
-        .font(.title2)
-        .foregroundStyle(.secondary)
-      
-      fileDropZone(
-        title: "Nouvelle Version", 
-        subtitle: "Glissez le fichier JSON de la nouvelle version ici",
-        isLoaded: store.isNewFileLoaded,
-        onDrop: { providers in
-          guard let provider = providers.first else { return false }
-          send(.fileDroppedWithProvider(.new, provider))
-          return true
-        },
-        onSelectFile: { send(.selectFileTapped(.new)) }
-      )
+    VStack(spacing: 24) {
+      HStack(spacing: 24) {
+        DropZone(
+          title: "Ancienne Version",
+          subtitle: "Glissez le fichier JSON de l'ancienne version ici",
+          isLoaded: store.isOldFileLoaded,
+          isLoading: store.isLoadingOldFile,
+          primaryColor: .blue,
+          onDrop: { providers in
+            guard let provider = providers.first else { return false }
+            send(.fileDroppedWithProvider(.old, provider))
+            return true
+          },
+          onSelectFile: { send(.selectFileTapped(.old)) },
+          onRemove: store.isOldFileLoaded ? { send(.removeFile(.old)) } : nil,
+          metadata: store.oldFileMetadata
+        )
+        
+        VStack(spacing: 8) {
+          Image(systemName: "arrow.right")
+            .font(.title2)
+            .foregroundStyle(.secondary)
+          
+          if store.isOldFileLoaded && store.isNewFileLoaded {
+            Button {
+              send(.switchFiles)
+            } label: {
+              Image(systemName: "arrow.left.arrow.right")
+                .font(.caption)
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+            .help("Échanger les fichiers")
+          }
+        }
+        .frame(width: 32)
+
+        DropZone(
+          title: "Nouvelle Version", 
+          subtitle: "Glissez le fichier JSON de la nouvelle version ici",
+          isLoaded: store.isNewFileLoaded,
+          isLoading: store.isLoadingNewFile,
+          primaryColor: .green,
+          onDrop: { providers in
+            guard let provider = providers.first else { return false }
+            send(.fileDroppedWithProvider(.new, provider))
+            return true
+          },
+          onSelectFile: { send(.selectFileTapped(.new)) },
+          onRemove: store.isNewFileLoaded ? { send(.removeFile(.new)) } : nil,
+          metadata: store.newFileMetadata
+        )
+      }
+      .overlay(alignment: .bottom) {
+        if store.isOldFileLoaded && store.isNewFileLoaded {
+          Button("Comparer les fichiers") {
+            send(.compareButtonTapped)
+          }
+          .buttonStyle(.borderedProminent)
+          .controlSize(.large)
+          .offset(y: 48)
+          .transition(.push(from: .top).combined(with: .opacity))
+        }
+      }
     }
     .padding()
     .frame(maxHeight: .infinity)
-  }
-  
-  private func fileDropZone(
-    title: String,
-    subtitle: String, 
-    isLoaded: Bool,
-    onDrop: @escaping ([NSItemProvider]) -> Bool,
-    onSelectFile: @escaping () -> Void
-  ) -> some View {
-    VStack(spacing: 16) {
-      VStack(spacing: 8) {
-        Image(systemName: isLoaded ? "checkmark.circle.fill" : "doc.text")
-          .font(.largeTitle)
-          .foregroundStyle(isLoaded ? .green : .blue)
-        
-        Text(title)
-          .font(.headline)
-          .fontWeight(.semibold)
-        
-        if isLoaded {
-          Text("Fichier chargé")
-            .font(.caption)
-            .foregroundStyle(.green)
-        } else {
-          Text(subtitle)
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            .multilineTextAlignment(.center)
-        }
-      }
-      
-      if !isLoaded {
-        Button("Sélectionner fichier") {
-          onSelectFile()
-        }
-        .controlSize(.small)
-      }
-    }
-    .frame(maxWidth: .infinity, minHeight: 200)
-    .padding()
-    .background(
-      RoundedRectangle(cornerRadius: 12)
-        .fill(isLoaded ? Color.green.opacity(0.1) : Color.blue.opacity(0.1))
-        .overlay(
-          RoundedRectangle(cornerRadius: 12)
-            .stroke(isLoaded ? Color.green : Color.blue, style: StrokeStyle(lineWidth: 2, dash: [8]))
-        )
-    )
-    .onDrop(of: [UTType.json], isTargeted: nil) { providers in
-      onDrop(providers)
-    }
   }
   
   private var comparisonContent: some View {
@@ -137,8 +124,8 @@ struct CompareView: View {
       tabs
       Divider()
       // Content area
-      if let comparison = store.comparison {
-        tabContent(for: store.selectedTab, comparison: comparison)
+      if let changes = store.changes {
+        tabContent(for: store.selectedTab, changes: changes)
       }
     }
   }
@@ -152,8 +139,8 @@ struct CompareView: View {
               .font(.headline)
               .foregroundStyle(store.selectedTab == tab ? .primary : .secondary)
 
-            if let comparison = store.comparison {
-              Text(countForTab(tab, comparison: comparison))
+            if let changes = store.changes {
+              Text(countForTab(tab, changes: changes))
                 .font(.caption)
                 .foregroundStyle(.secondary)
             }
@@ -175,69 +162,101 @@ struct CompareView: View {
     .padding(.horizontal)
   }
 
-  private func countForTab(_ tab: CompareFeature.ComparisonTab, comparison: TokenComparison) -> String {
+  private func countForTab(_ tab: CompareFeature.ComparisonTab, changes: ComparisonChanges) -> String {
     switch tab {
     case .overview:
       return "Résumé"
     case .added:
-      return "\(comparison.changes.added.count)"
+      return "\(changes.added.count)"
     case .removed:
-      return "\(comparison.changes.removed.count)"
+      return "\(changes.removed.count)"
     case .modified:
-      return "\(comparison.changes.modified.count)"
+      return "\(changes.modified.count)"
     }
   }
   
-  private func tabContent(for tab: CompareFeature.ComparisonTab, comparison: TokenComparison) -> some View {
+  private func tabContent(for tab: CompareFeature.ComparisonTab, changes: ComparisonChanges) -> some View {
     Group {
       switch tab {
       case .overview:
-        overviewContent(comparison: comparison)
+        overviewContent(changes: changes)
       case .added:
-        addedTokensList(tokens: comparison.changes.added)
+        addedTokensList(tokens: changes.added)
       case .removed:
-        removedTokensList(tokens: comparison.changes.removed)
+        removedTokensList(tokens: changes.removed)
       case .modified:
-        modifiedTokensList(modifications: comparison.changes.modified)
+        modifiedTokensList(modifications: changes.modified)
       }
     }
     .padding()
   }
   
-  private func overviewContent(comparison: TokenComparison) -> some View {
+  private func overviewContent(changes: ComparisonChanges) -> some View {
     VStack(alignment: .leading, spacing: 20) {
       Text("Résumé des changements")
         .font(.title2)
         .fontWeight(.semibold)
       
+      // Informations sur les fichiers
+      HStack(spacing: 20) {
+        fileInfoCard(
+          title: "Ancienne Version",
+          metadata: store.oldFileMetadata,
+          color: .blue
+        )
+        
+        Image(systemName: "arrow.right")
+          .font(.title2)
+          .foregroundStyle(.secondary)
+        
+        fileInfoCard(
+          title: "Nouvelle Version",
+          metadata: store.newFileMetadata,
+          color: .green
+        )
+      }
+      .padding(.bottom, 8)
+      
       LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: 16) {
         summaryCard(
           title: "Tokens Ajoutés",
-          count: comparison.changes.added.count,
+          count: changes.added.count,
           color: .green,
           icon: "plus.circle.fill"
-        )
-        
+        ) {
+          send(.tabTapped(.added))
+        }
+
         summaryCard(
           title: "Tokens Supprimés", 
-          count: comparison.changes.removed.count,
+          count: changes.removed.count,
           color: .red,
           icon: "minus.circle.fill"
-        )
-        
+        ) {
+          send(.tabTapped(.removed))
+        }
+
         summaryCard(
           title: "Tokens Modifiés",
-          count: comparison.changes.modified.count,
+          count: changes.modified.count,
           color: .orange,
           icon: "pencil.circle.fill"
-        )
+        ) {
+          send(.tabTapped(.modified))
+        }
       }
       
       Spacer()
     }
   }
   
-  private func summaryCard(title: String, count: Int, color: Color, icon: String) -> some View {
+  private func summaryCard(
+    title: String,
+    count: Int,
+    color: Color,
+    icon: String,
+    onTap: @escaping () -> Void
+  ) -> some View {
     VStack(spacing: 8) {
       Image(systemName: icon)
         .font(.largeTitle)
@@ -262,6 +281,72 @@ struct CompareView: View {
             .stroke(color.opacity(0.3), lineWidth: 1)
         )
     )
+    .onTapGesture { onTap() }
+  }
+  
+  private func fileInfoCard(title: String, metadata: TokenMetadata?, color: Color) -> some View {
+    VStack(alignment: .leading, spacing: 8) {
+      Text(title)
+        .font(.headline)
+        .foregroundStyle(color)
+      
+      if let metadata = metadata {
+        VStack(alignment: .leading, spacing: 4) {
+          Text("Exporté le: \(formatFrenchDate(metadata.exportedAt))")
+            .font(.caption)
+            .foregroundStyle(.primary)
+          
+          Text("Version: \(metadata.version)")
+            .font(.caption)
+            .foregroundStyle(.secondary)
+          
+          Text("Générateur: \(metadata.generator)")
+            .font(.caption)
+            .foregroundStyle(.secondary)
+        }
+      } else {
+        Text("Pas de métadonnées")
+          .font(.caption)
+          .foregroundStyle(.secondary)
+      }
+    }
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .padding()
+    .background(
+      RoundedRectangle(cornerRadius: 8)
+        .fill(color.opacity(0.1))
+        .overlay(
+          RoundedRectangle(cornerRadius: 8)
+            .stroke(color.opacity(0.3), lineWidth: 1)
+        )
+    )
+  }
+  
+  private func formatFrenchDate(_ dateString: String) -> String {
+    // Try to parse common date formats and convert to French format
+    let inputFormatter = DateFormatter()
+    let outputFormatter = DateFormatter()
+    outputFormatter.locale = Locale(identifier: "fr_FR")
+    outputFormatter.dateStyle = .medium
+    outputFormatter.timeStyle = .short
+    
+    // Try different input formats
+    let formats = [
+      "yyyy-MM-dd HH:mm:ss",
+      "yyyy-MM-dd'T'HH:mm:ss",
+      "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
+      "yyyy-MM-dd"
+    ]
+    
+    for format in formats {
+      inputFormatter.dateFormat = format
+      if let date = inputFormatter.date(from: dateString) {
+        return outputFormatter.string(from: date)
+      }
+    }
+    
+    // If no format matches, return original string
+    return dateString
   }
   
   private func addedTokensList(tokens: [TokenSummary]) -> some View {

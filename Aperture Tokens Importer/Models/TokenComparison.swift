@@ -1,10 +1,5 @@
 import Foundation
 
-// Structure optimisée pour représenter une comparaison sans stocker les nodes complets
-public struct TokenComparison: Equatable, Sendable {
-  let changes: ComparisonChanges
-}
-
 public struct ComparisonChanges: Equatable, Sendable {
   let added: [TokenSummary]
   let removed: [TokenSummary] 

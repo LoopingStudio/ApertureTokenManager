@@ -1,8 +1,10 @@
 import Foundation
+import AppKit
+import UniformTypeIdentifiers
 
 actor ComparisonService {
   
-  func compareTokens(oldTokens: [TokenNode], newTokens: [TokenNode]) async -> TokenComparison {
+  func compareTokens(oldTokens: [TokenNode], newTokens: [TokenNode]) async -> ComparisonChanges {
     let oldFlat = flattenTokens(oldTokens)
     let newFlat = flattenTokens(newTokens)
     
@@ -21,7 +23,7 @@ actor ComparisonService {
       modified: modified
     )
     
-    return TokenComparison(changes: changes)
+    return changes
   }
   
   // MARK: - Private Methods
@@ -85,45 +87,166 @@ actor ComparisonService {
     var changes: [ColorChange] = []
     
     // Comparer Legacy
-    if let oldLegacy = oldModes.legacy, let newLegacy = newModes.legacy {
-      if oldLegacy.light != newLegacy.light {
-        changes.append(ColorChange(
-          brandName: Brand.legacy,
-          theme: ThemeType.light,
-          oldColor: oldLegacy.light,
-          newColor: newLegacy.light
-        ))
-      }
-      if oldLegacy.dark != newLegacy.dark {
-        changes.append(ColorChange(
-          brandName: Brand.legacy,
-          theme: ThemeType.dark,
-          oldColor: oldLegacy.dark,
-          newColor: newLegacy.dark
-        ))
-      }
-    }
+    changes.append(contentsOf: compareThemes(
+      oldTheme: oldModes.legacy,
+      newTheme: newModes.legacy,
+      brandName: Brand.legacy
+    ))
     
     // Comparer New Brand
-    if let oldNewBrand = oldModes.newBrand, let newNewBrand = newModes.newBrand {
-      if oldNewBrand.light != newNewBrand.light {
+    changes.append(contentsOf: compareThemes(
+      oldTheme: oldModes.newBrand,
+      newTheme: newModes.newBrand,
+      brandName: Brand.newBrand
+    ))
+    
+    return changes
+  }
+  
+  private func compareThemes(
+    oldTheme: TokenThemes.Appearance?,
+    newTheme: TokenThemes.Appearance?,
+    brandName: String
+  ) -> [ColorChange] {
+    guard let oldTheme = oldTheme, let newTheme = newTheme else { return [] }
+    
+    var changes: [ColorChange] = []
+    
+    // Comparer les thèmes light et dark
+    let themeComparisons: [(oldColor: String, newColor: String, themeType: String)] = [
+      (oldTheme.light, newTheme.light, ThemeType.light),
+      (oldTheme.dark, newTheme.dark, ThemeType.dark)
+    ]
+    
+    for comparison in themeComparisons {
+      if comparison.oldColor != comparison.newColor {
         changes.append(ColorChange(
-          brandName: Brand.newBrand,
-          theme: ThemeType.light,
-          oldColor: oldNewBrand.light,
-          newColor: newNewBrand.light
-        ))
-      }
-      if oldNewBrand.dark != newNewBrand.dark {
-        changes.append(ColorChange(
-          brandName: Brand.newBrand,
-          theme: ThemeType.dark,
-          oldColor: oldNewBrand.dark,
-          newColor: newNewBrand.dark
+          brandName: brandName,
+          theme: comparison.themeType,
+          oldColor: comparison.oldColor,
+          newColor: comparison.newColor
         ))
       }
     }
     
     return changes
+  }
+  
+  @MainActor
+  func exportToNotion(
+    _ changes: ComparisonChanges,
+    oldMetadata: TokenMetadata,
+    newMetadata: TokenMetadata
+  ) async throws {
+    let markdownContent = await createNotionMarkdown(
+      changes: changes,
+      oldMetadata: oldMetadata,
+      newMetadata: newMetadata
+    )
+
+    let savePanel = NSSavePanel()
+    savePanel.allowedContentTypes = [.plainText]
+    savePanel.nameFieldStringValue = "comparison-export-notion.md"
+    savePanel.title = "Exporter la comparaison pour Notion"
+    savePanel.message = "Choisissez où sauvegarder l'export Markdown pour Notion"
+    
+    guard savePanel.runModal() == .OK, let url = savePanel.url else {
+      throw NSError(domain: "ComparisonService", code: 2, userInfo: [NSLocalizedDescriptionKey: "Export annulé"])
+    }
+    
+    try markdownContent.write(to: url, atomically: true, encoding: .utf8)
+  }
+  
+  private func createNotionMarkdown(
+    changes: ComparisonChanges,
+    oldMetadata: TokenMetadata,
+    newMetadata: TokenMetadata
+  ) -> String {
+    let dateFormatter = DateFormatter()
+    dateFormatter.locale = Locale(identifier: "fr_FR")
+    dateFormatter.dateStyle = .medium
+    dateFormatter.timeStyle = .short
+    let exportDate = dateFormatter.string(from: Date())
+    
+    var markdown = ""
+    
+    // En-tête
+    markdown += "# Rapport de Comparaison des Tokens\n\n"
+    markdown += "**Date d'export:** \(exportDate)\n\n"
+    
+    // Informations des fichiers
+    markdown += "## Informations des Fichiers\n\n"
+    markdown += "| Version | Date d'export | Version | Générateur |\n"
+    markdown += "|---------|---------------|---------|-------------|\n"
+    markdown += "| Ancienne | \(oldMetadata.exportedAt.formatFrenchDate) | \(oldMetadata.version) |\n"
+    markdown += "| Nouvelle | \(newMetadata.exportedAt.formatFrenchDate) | \(newMetadata.version) |\n\n"
+
+    // Résumé
+    markdown += "## Résumé des Changements\n\n"
+    markdown += "- **\(changes.added.count)** tokens ajoutés\n"
+    markdown += "- **\(changes.removed.count)** tokens supprimés\n"
+    markdown += "- **\(changes.modified.count)** tokens modifiés\n\n"
+    
+    // Tokens ajoutés
+    if !changes.added.isEmpty {
+      markdown += "## ✅ Tokens Ajoutés (\(changes.added.count))\n\n"
+      for token in changes.added {
+        markdown += "### \(token.name)\n"
+        markdown += "**Chemin:** `\(token.path)`\n\n"
+        if let modes = token.modes {
+          markdown += addColorInfo(modes: modes)
+        }
+        markdown += "\n---\n\n"
+      }
+    }
+    
+    // Tokens supprimés
+    if !changes.removed.isEmpty {
+      markdown += "## ❌ Tokens Supprimés (\(changes.removed.count))\n\n"
+      for token in changes.removed {
+        markdown += "### \(token.name)\n"
+        markdown += "**Chemin:** `\(token.path)`\n\n"
+        if let modes = token.modes {
+          markdown += addColorInfo(modes: modes)
+        }
+        markdown += "\n---\n\n"
+      }
+    }
+    
+    // Tokens modifiés
+    if !changes.modified.isEmpty {
+      markdown += "## ✏️ Tokens Modifiés (\(changes.modified.count))\n\n"
+      for modification in changes.modified {
+        markdown += "### \(modification.tokenName)\n"
+        markdown += "**Chemin:** `\(modification.tokenPath)`\n\n"
+        
+        for change in modification.colorChanges {
+          markdown += "**\(change.brandName) - \(change.theme):**\n"
+          markdown += "- ❌ Avant: `\(change.oldColor)`\n"
+          markdown += "- ✅ Après: `\(change.newColor)`\n\n"
+        }
+        markdown += "\n---\n\n"
+      }
+    }
+    
+    return markdown
+  }
+  
+  private func addColorInfo(modes: TokenThemes) -> String {
+    var colorInfo = ""
+    
+    if let legacy = modes.legacy {
+      colorInfo += "**Legacy:**\n"
+      colorInfo += "- Light: `\(legacy.light)`\n"
+      colorInfo += "- Dark: `\(legacy.dark)`\n\n"
+    }
+    
+    if let newBrand = modes.newBrand {
+      colorInfo += "**New Brand:**\n"
+      colorInfo += "- Light: `\(newBrand.light)`\n"
+      colorInfo += "- Dark: `\(newBrand.dark)`\n\n"
+    }
+    
+    return colorInfo
   }
 }

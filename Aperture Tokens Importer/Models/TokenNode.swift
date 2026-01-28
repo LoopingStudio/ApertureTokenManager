@@ -1,15 +1,6 @@
 import Foundation
 
-// MARK: - Constants
-public enum Brand {
-  public static let legacy = "Legacy"
-  public static let newBrand = "New Brand"
-}
 
-public enum ThemeType {
-  public static let light = "light"
-  public static let dark = "dark"
-}
 
 public enum NodeType: String, Codable, Equatable, Sendable {
   case group
@@ -25,18 +16,19 @@ public enum NodeType: String, Codable, Equatable, Sendable {
 }
 
 // MARK: - Theme Structures
-public struct Theme: Codable, Equatable, Sendable {
-  let light: String
-  let dark: String
-}
 
 public struct TokenThemes: Codable, Equatable, Sendable {
-  let legacy: Theme?
-  let newBrand: Theme?
-  
+  let legacy: Appearance?
+  let newBrand: Appearance?
+
   enum CodingKeys: String, CodingKey {
     case legacy = "Legacy"
     case newBrand = "New Brand"
+  }
+
+  public struct Appearance: Codable, Equatable, Sendable {
+    let light: String
+    let dark: String
   }
 }
 
@@ -50,8 +42,15 @@ public struct TokenNode: Identifiable, Codable, Equatable, Sendable {
   var children: [TokenNode]?
   var isEnabled: Bool = true
 
-  // Init manuel pour gérer l'ID et les valeurs par défaut
-  init(id: UUID = UUID(), name: String, type: NodeType, path: String? = nil, modes: TokenThemes? = nil, children: [TokenNode]? = nil, isEnabled: Bool = true) {
+  init(
+    id: UUID = UUID(),
+    name: String,
+    type: NodeType,
+    path: String? = nil,
+    modes: TokenThemes? = nil,
+    children: [TokenNode]? = nil,
+    isEnabled: Bool = true
+  ) {
     self.id = id
     self.name = name
     self.type = type
@@ -61,7 +60,6 @@ public struct TokenNode: Identifiable, Codable, Equatable, Sendable {
     self.isEnabled = isEnabled
   }
 
-  // Mapping JSON (On ignore ID et isEnabled)
   enum CodingKeys: String, CodingKey {
     case name, type, path, modes, children
   }

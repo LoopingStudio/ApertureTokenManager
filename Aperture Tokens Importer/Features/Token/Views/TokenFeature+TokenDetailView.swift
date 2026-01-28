@@ -123,8 +123,7 @@ struct TokenDetailView: View {
       }
     }
   }
-  
-  // Petite prévisualisation de couleur
+
   private func colorPreview(color: Color, size: CGFloat) -> some View {
     RoundedRectangle(cornerRadius: 4)
       .fill(color)
@@ -135,7 +134,7 @@ struct TokenDetailView: View {
       }
   }
 
-  private func brandTheme(brandName: String, theme: Theme) -> some View {
+  private func brandTheme(brandName: String, theme: TokenThemes.Appearance) -> some View {
     VStack(alignment: .leading, spacing: 8) {
       Text(brandName)
         .font(.caption)

@@ -7,10 +7,16 @@ extension TokenFeature {
     switch action {
     case .fileDroppedWithProvider(let provider):
       return .run { send in
+        await send(.internal(.fileLoadingStarted))
         if let url = await tokenClient.handleFileDrop(provider) {
           await send(.internal(.loadFile(url)))
+        } else {
+          await send(.internal(.fileLoadingFailed("Impossible de lire le fichier")))
         }
       }
+    case .resetFile:
+      state = .initial
+      return .none
     case .toggleNode(let id):
       updateNodeRecursively(nodes: &state.rootNodes, targetId: id)
       return .none
@@ -25,7 +31,11 @@ extension TokenFeature {
       return .none
     case .selectFileTapped:
       return .run { send in
-        guard let url = try? await tokenClient.pickFile() else { return }
+        await send(.internal(.fileLoadingStarted))
+        guard let url = try? await tokenClient.pickFile() else { 
+          await send(.internal(.fileLoadingFailed("Aucun fichier sélectionné")))
+          return 
+        }
         await send(.internal(.loadFile(url)))
       }
     case .exportButtonTapped:

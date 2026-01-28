@@ -4,21 +4,40 @@ import Foundation
 extension TokenFeature {
   func handleInternalAction(_ action: Action.Internal, state: inout State) -> EffectOf<Self> {
     switch action {
+    case .fileLoadingStarted:
+      state.isLoading = true
+      state.loadingError = false
+      state.errorMessage = nil
+      return .none
+      
+    case .fileLoadingFailed(let message):
+      state.isLoading = false
+      state.loadingError = true
+      state.errorMessage = message
+      return .none
+      
     case .loadFile(let url):
       return .run { send in
-        let nodes = try await tokenClient.loadJSON(url)
-        await send(.binding(.set(\.loadingError, false)))
-        await send(.internal(.nodesLoaded(nodes)))
-      } catch: { error, send in
-        print("Erreur chargement: \(error)")
-        await send(.binding(.set(\.loadingError, true)))
+        do {
+          let tokenExport = try await tokenClient.loadJSON(url)
+          await send(.internal(.exportLoaded(tokenExport)))
+        } catch {
+          print("Erreur chargement: \(error)")
+          await send(.internal(.fileLoadingFailed("Erreur de chargement du fichier JSON")))
+        }
       }
-    case .nodesLoaded(let nodes):
-      state.rootNodes = nodes
+      
+    case .exportLoaded(let tokenExport):
+      state.isLoading = false
+      state.loadingError = false
+      state.errorMessage = nil
+      state.rootNodes = tokenExport.tokens
       state.isFileLoaded = true
-      state.allNodes = buildFlatNodeList(nodes)
-      state.selectedNode = nodes.first
+      state.metadata = tokenExport.metadata
+      state.allNodes = buildFlatNodeList(tokenExport.tokens)
+      state.selectedNode = tokenExport.tokens.first
       return .none
+      
     case .applyFilters:
       applyFiltersToNodes(state: &state)
       return .none

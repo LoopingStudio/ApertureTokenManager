@@ -4,61 +4,37 @@ import UniformTypeIdentifiers
 
 @ViewAction(for: TokenFeature.self)
 struct ApertureTokensView: View {
-  // On utilise 'let store' directement, sans @ObservedObject wrapper ici
-  // car le store est maintenant Observable par nature.
   @Bindable var store: StoreOf<TokenFeature>
 
-  @State private var isHovering = false
-
   var body: some View {
-    GeometryReader { geometry in
-      HSplitView {
-        VStack(spacing: 0) {
-          header
-          if store.isFileLoaded {
-            nodesView
-          } else {
-            dropZone
-          }
-        }
-        .frame(
-          minWidth: 200,
-          idealWidth: geometry.size.width * store.splitViewRatio,
-          maxWidth: max(200, geometry.size.width * 0.8)
-        )
-
-        rightView
-          .frame(
-            minWidth: 150,
-            idealWidth: geometry.size.width * (1 - store.splitViewRatio)
-          )
-      }
-    }
-    .frame(minWidth: 600, minHeight: 400)
-    .onKeyPress { keyPress in
-      switch keyPress.key {
-      case .upArrow, .downArrow, .rightArrow, .leftArrow:
-        send(.keyPressed(keyPress.key))
-        return .handled
-      default:
-        return .ignored
+    VStack(spacing: 0) {
+      header
+      if store.isFileLoaded {
+        contentView
+      } else {
+        fileSelectionArea
       }
     }
   }
 
   private var header: some View {
-    VStack(spacing: 8) {
+    VStack(spacing: 12) {
       HStack {
-        Text("Aperture Viewer")
-          .font(.headline)
-          .foregroundStyle(.purple)
+        Text("Aperture Tokens Viewer")
+          .font(.title)
+          .fontWeight(.bold)
+        
         Spacer()
 
         if store.isFileLoaded {
+          Button("Nouvelle Import") { send(.resetFile) }
+            .controlSize(.small)
+          
           Button("Exporter Design System") {
             send(.exportButtonTapped)
           }
           .controlSize(.small)
+          .buttonStyle(.borderedProminent)
         }
       }
       
@@ -80,9 +56,69 @@ struct ApertureTokensView: View {
         }
         .padding(.top, 4)
       }
+      
+      if let errorMessage = store.errorMessage {
+        Text(errorMessage)
+          .foregroundStyle(.red)
+          .font(.caption)
+      }
+      
+      Divider()
     }
     .padding()
-    .background(Color(nsColor: .controlBackgroundColor))
+  }
+  
+  private var fileSelectionArea: some View {
+    VStack(spacing: 24) {
+      DropZone(
+        title: "Fichier de Tokens",
+        subtitle: "Glissez votre fichier JSON ici ou cliquez pour le sélectionner",
+        isLoaded: store.isFileLoaded,
+        isLoading: store.isLoading,
+        hasError: store.loadingError,
+        errorMessage: store.errorMessage,
+        primaryColor: .purple,
+        onDrop: { providers in
+          guard let provider = providers.first else { return false }
+          send(.fileDroppedWithProvider(provider))
+          return true
+        },
+        onSelectFile: { send(.selectFileTapped) },
+        metadata: store.metadata
+      )
+    }
+    .padding()
+    .frame(maxHeight: .infinity)
+  }
+
+  private var contentView: some View {
+    GeometryReader { geometry in
+      HSplitView {
+        VStack(spacing: 0) {
+          nodesView
+        }
+        .frame(
+          minWidth: 200,
+          idealWidth: geometry.size.width * store.splitViewRatio,
+          maxWidth: max(200, geometry.size.width * 0.8)
+        )
+
+        rightView
+          .frame(
+            minWidth: 150,
+            idealWidth: geometry.size.width * (1 - store.splitViewRatio)
+          )
+      }
+    }
+    .onKeyPress { keyPress in
+      switch keyPress.key {
+      case .upArrow, .downArrow, .rightArrow, .leftArrow:
+        send(.keyPressed(keyPress.key))
+        return .handled
+      default:
+        return .ignored
+      }
+    }
   }
 
   private var nodesView: some View {
@@ -108,52 +144,6 @@ struct ApertureTokensView: View {
     .frame(minHeight: 300, maxHeight: .infinity)
   }
 
-  var dropZone: some View {
-    VStack(spacing: 16.0) {
-      if store.loadingError {
-        Image(systemName: "exclamationmark.circle")
-          .resizable()
-          .scaledToFit()
-          .frame(width: 48, height: 48)
-          .foregroundStyle(.red)
-        Text("Erreur de chargement du fichier JSON")
-          .font(.body)
-          .foregroundStyle(.secondary)
-      } else {
-        Image(systemName: "arrow.down.doc.fill")
-          .resizable()
-          .scaledToFit()
-          .frame(width: 48, height: 48)
-          .foregroundStyle(.purple)
-        Text("Glissez votre fichier JSON ici")
-          .font(.body)
-          .foregroundStyle(.secondary)
-      }
-    }
-    .padding(40)
-    .background(
-      RoundedRectangle(cornerRadius: 12)
-        .stroke(style: StrokeStyle(lineWidth: 2, dash: [5]))
-        .foregroundStyle(isHovering ? .purple : .gray)
-        .background(isHovering ? Color.purple.opacity(0.05) : Color.clear)
-    )
-    .onHover { hovering in
-      withAnimation(.easeInOut(duration: 0.2)) {
-        isHovering = hovering
-      }
-      if hovering {
-        NSCursor.pointingHand.push()
-      } else {
-        NSCursor.pop()
-      }
-    }
-    .onTapGesture { send(.selectFileTapped) }
-    .frame(maxWidth: .infinity, maxHeight: .infinity)
-    .onDrop(of: [.json], isTargeted: nil) { providers in
-      handleDrop(providers: providers)
-    }
-  }
-
   @ViewBuilder
   private var rightView: some View {
     if let selectedNode = store.selectedNode {
@@ -163,11 +153,5 @@ struct ApertureTokensView: View {
       ContentUnavailableView("Sélectionnez un token", systemImage: "paintbrush")
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
-  }
-
-  private func handleDrop(providers: [NSItemProvider]) -> Bool {
-    guard let provider = providers.first else { return false }
-    send(.fileDroppedWithProvider(provider))
-    return true
   }
 }

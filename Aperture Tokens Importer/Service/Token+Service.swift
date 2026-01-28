@@ -10,9 +10,23 @@ actor TokenService {
     static let apertureColors = "Aperture+Colors.swift"
   }
   
-  func loadJSON(from url: URL) throws -> [TokenNode] {
+  func loadTokenExport(from url: URL) throws -> TokenExport {
     let data = try Data(contentsOf: url)
-    return try JSONDecoder().decode([TokenNode].self, from: data)
+    
+    // Try to decode the new format first (with metadata wrapper)
+    do {
+      return try JSONDecoder().decode(TokenExport.self, from: data)
+    } catch {
+      // Fallback to old format (direct array) - create default metadata
+      let tokens = try JSONDecoder().decode([TokenNode].self, from: data)
+      let defaultMetadata = TokenMetadata(
+        exportedAt: "Date inconnue",
+        timestamp: 0,
+        version: "Inconnue",
+        generator: "Fichier legacy"
+      )
+      return TokenExport(metadata: defaultMetadata, tokens: tokens)
+    }
   }
   
   @MainActor
@@ -217,7 +231,7 @@ actor TokenService {
   private func createBrandColorSet(for token: TokenNode, brand: String, at parentURL: URL) async throws {
     guard let modes = token.modes else { return }
     
-    let theme: Theme?
+    let theme: TokenThemes.Appearance?
     switch brand {
     case Brand.legacy: theme = modes.legacy
     case Brand.newBrand: theme = modes.newBrand

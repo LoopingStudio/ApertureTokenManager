@@ -7,51 +7,49 @@ extension CompareFeature {
     case .loadFile(let fileType, let url):
       return .run { send in
         do {
-          let tokens = try await tokenClient.loadJSON(url)
-          await send(.internal(.fileLoaded(fileType, tokens)))
+          let tokenExport = try await tokenClient.loadJSON(url)
+          await send(.internal(.exportLoaded(fileType, tokenExport)))
         } catch {
-          await send(.internal(.loadingFailed("Erreur chargement ancien fichier: \(error.localizedDescription)")))
+          await send(.internal(.loadingFailed("Erreur chargement fichier: \(error.localizedDescription)")))
         }
-      }
-    case .fileLoaded(let fileType, let tokens):
-      switch fileType {
-      case .old:
-        state.oldVersionTokens = tokens
-        state.isOldFileLoaded = true
-        state.loadingError = nil
-
-        // Si les deux fichiers sont chargés, lancer la comparaison
-        if state.isNewFileLoaded {
-          return .send(.internal(.performComparison))
-        }
-      case .new:
-        state.newVersionTokens = tokens
-        state.isNewFileLoaded = true
-        state.loadingError = nil
-
-        // Si les deux fichiers sont chargés, lancer la comparaison
-        if state.isOldFileLoaded {
-          return .send(.internal(.performComparison))
-        }
-      }
-      return .none
-    case .performComparison:
-      guard let oldTokens = state.oldVersionTokens, 
-            let newTokens = state.newVersionTokens else { 
-        return .none 
       }
       
+    case .exportLoaded(let fileType, let tokenExport):
+      switch fileType {
+      case .old:
+        state.isLoadingOldFile = false
+        state.oldVersionTokens = tokenExport.tokens
+        state.isOldFileLoaded = true
+        state.oldFileMetadata = tokenExport.metadata
+        state.loadingError = nil
+
+        // Ne plus lancer automatiquement la comparaison
+      case .new:
+        state.isLoadingNewFile = false
+        state.newVersionTokens = tokenExport.tokens
+        state.isNewFileLoaded = true
+        state.newFileMetadata = tokenExport.metadata
+        state.loadingError = nil
+
+        // Ne plus lancer automatiquement la comparaison
+      }
+      return .none
+      
+    case .loadingFailed(let errorMessage):
+      state.isLoadingOldFile = false
+      state.isLoadingNewFile = false
+      state.loadingError = errorMessage
+      return .none
+      
+    case .performComparison:
+      guard let oldTokens = state.oldVersionTokens, let newTokens = state.newVersionTokens else { return .none }
       return .run { send in
         let comparison = await comparisonClient.compareTokens(oldTokens, newTokens)
         await send(.internal(.comparisonCompleted(comparison)))
       }
       
-    case .comparisonCompleted(let comparison):
-      state.comparison = comparison
-      return .none
-      
-    case .loadingFailed(let error):
-      state.loadingError = error
+    case .comparisonCompleted(let changes):
+      state.changes = changes
       return .none
     }
   }

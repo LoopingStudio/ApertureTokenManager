@@ -24,6 +24,7 @@ struct ApertureTokensImporterApp: App {
           Label("Comparer", systemImage: "doc.text.magnifyingglass")
         }
       }
+      .frame(minWidth: 800, minHeight: 600)
     }
   }
 }
