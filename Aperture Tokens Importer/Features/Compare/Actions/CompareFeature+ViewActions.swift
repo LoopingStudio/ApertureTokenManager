@@ -94,6 +94,16 @@ extension CompareFeature {
     case .tabTapped(let tab):
       state.selectedTab = tab
       return .none
+      
+    case .suggestReplacement(let removedTokenPath, let replacementTokenPath):
+      guard state.changes != nil else { return .none }
+      
+      if let replacementPath = replacementTokenPath {
+        state.changes?.addReplacementSuggestion(removedTokenPath: removedTokenPath, suggestedTokenPath: replacementPath)
+      } else {
+        state.changes?.removeReplacementSuggestion(for: removedTokenPath)
+      }
+      return .none
     }
   }
 }

@@ -79,6 +79,7 @@ public struct CompareFeature: Sendable {
       case resetComparison
       case selectChange(TokenModification?)
       case selectFileTapped(FileType)
+      case suggestReplacement(removedTokenPath: String, replacementTokenPath: String?)
       case switchFiles
       case tabTapped(ComparisonTab)
     }

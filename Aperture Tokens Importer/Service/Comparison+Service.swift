@@ -211,6 +211,12 @@ actor ComparisonService {
       for token in changes.removed {
         markdown += "### \(token.name)\n"
         markdown += "**Chemin:** `\(token.path)`\n\n"
+        
+        // Afficher la suggestion de remplacement si elle existe
+        if let suggestion = changes.getSuggestion(for: token.path) {
+          markdown += "🔄 **Remplaçant suggéré:** `\(suggestion.suggestedTokenPath)`\n\n"
+        }
+        
         if let modes = token.modes {
           markdown += addColorInfo(modes: modes)
         }
