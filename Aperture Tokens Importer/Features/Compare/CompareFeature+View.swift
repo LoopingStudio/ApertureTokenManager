@@ -15,7 +15,7 @@ struct CompareView: View {
         fileSelectionArea
       }
     }
-    .animation(.easeInOut, value: store.isOldFileLoaded && store.isNewFileLoaded)
+    .animation(.easeInOut, value: store.oldFile.isLoaded && store.newFile.isLoaded)
   }
 
   // MARK: - Header
@@ -57,8 +57,8 @@ struct CompareView: View {
         DropZone(
           title: "Ancienne Version",
           subtitle: "Glissez le fichier JSON de l'ancienne version ici",
-          isLoaded: store.isOldFileLoaded,
-          isLoading: store.isLoadingOldFile,
+          isLoaded: store.oldFile.isLoaded,
+          isLoading: store.oldFile.isLoading,
           primaryColor: .blue,
           onDrop: { providers in
             guard let provider = providers.first else { return false }
@@ -66,8 +66,8 @@ struct CompareView: View {
             return true
           },
           onSelectFile: { send(.selectFileTapped(.old)) },
-          onRemove: store.isOldFileLoaded ? { send(.removeFile(.old)) } : nil,
-          metadata: store.oldFileMetadata
+          onRemove: store.oldFile.isLoaded ? { send(.removeFile(.old)) } : nil,
+          metadata: store.oldFile.metadata
         )
 
         VStack(spacing: 8) {
@@ -75,7 +75,7 @@ struct CompareView: View {
             .font(.title2)
             .foregroundStyle(.secondary)
 
-          if store.isOldFileLoaded && store.isNewFileLoaded {
+          if store.oldFile.isLoaded && store.newFile.isLoaded {
             Button {
               send(.switchFiles)
             } label: {
@@ -92,8 +92,8 @@ struct CompareView: View {
         DropZone(
           title: "Nouvelle Version",
           subtitle: "Glissez le fichier JSON de la nouvelle version ici",
-          isLoaded: store.isNewFileLoaded,
-          isLoading: store.isLoadingNewFile,
+          isLoaded: store.newFile.isLoaded,
+          isLoading: store.newFile.isLoading,
           primaryColor: .green,
           onDrop: { providers in
             guard let provider = providers.first else { return false }
@@ -101,12 +101,12 @@ struct CompareView: View {
             return true
           },
           onSelectFile: { send(.selectFileTapped(.new)) },
-          onRemove: store.isNewFileLoaded ? { send(.removeFile(.new)) } : nil,
-          metadata: store.newFileMetadata
+          onRemove: store.newFile.isLoaded ? { send(.removeFile(.new)) } : nil,
+          metadata: store.newFile.metadata
         )
       }
       .overlay(alignment: .bottom) {
-        if store.isOldFileLoaded && store.isNewFileLoaded {
+        if store.oldFile.isLoaded && store.newFile.isLoaded {
           Button("Comparer les fichiers") {
             send(.compareButtonTapped)
           }
@@ -116,9 +116,21 @@ struct CompareView: View {
           .transition(.push(from: .top).combined(with: .opacity))
         }
       }
+      
+      if !store.comparisonHistory.isEmpty && !store.oldFile.isLoaded && !store.newFile.isLoaded {
+        ComparisonHistoryView(
+          history: store.comparisonHistory,
+          onEntryTapped: { send(.historyEntryTapped($0)) },
+          onRemove: { send(.removeHistoryEntry($0)) },
+          onClear: { send(.clearHistory) }
+        )
+        .frame(maxWidth: 600)
+        .padding(.top, 16)
+      }
     }
     .padding()
     .frame(maxHeight: .infinity)
+    .onAppear { send(.onAppear) }
   }
 
   // MARK: - Comparison Content
@@ -185,8 +197,8 @@ struct CompareView: View {
     case .overview:
       OverviewView(
         changes: changes,
-        oldFileMetadata: store.oldFileMetadata,
-        newFileMetadata: store.newFileMetadata,
+        oldFileMetadata: store.oldFile.metadata,
+        newFileMetadata: store.newFile.metadata,
         onTabTapped: { send(.tabTapped($0)) }
       )
 
@@ -197,7 +209,7 @@ struct CompareView: View {
       RemovedTokensView(
         tokens: changes.removed,
         changes: store.changes,
-        newVersionTokens: store.newVersionTokens,
+        newVersionTokens: store.newFile.tokens,
         onSuggestReplacement: { removedPath, replacementPath in
           send(.suggestReplacement(removedTokenPath: removedPath, replacementTokenPath: replacementPath))
         }
@@ -206,7 +218,7 @@ struct CompareView: View {
     case .modified:
       ModifiedTokensView(
         modifications: changes.modified,
-        newVersionTokens: store.newVersionTokens
+        newVersionTokens: store.newFile.tokens
       )
     }
   }

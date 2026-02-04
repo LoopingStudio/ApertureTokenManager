@@ -20,23 +20,46 @@ extension TokenFeature {
       return .run { send in
         do {
           let tokenExport = try await fileClient.loadTokenExport(url)
-          await send(.internal(.exportLoaded(tokenExport)))
+          await send(.internal(.exportLoaded(tokenExport, url)))
         } catch {
           print("Erreur chargement: \(error)")
           await send(.internal(.fileLoadingFailed("Erreur de chargement du fichier JSON")))
         }
       }
       
-    case .exportLoaded(let tokenExport):
+    case .exportLoaded(let tokenExport, let url):
       state.isLoading = false
       state.loadingError = false
       state.errorMessage = nil
       state.rootNodes = tokenExport.tokens
       state.isFileLoaded = true
       state.metadata = tokenExport.metadata
+      state.currentFileURL = url
       state.allNodes = buildFlatNodeList(tokenExport.tokens)
       state.selectedNode = tokenExport.tokens.first
+      
+      // Save to history
+      let fileName = url.lastPathComponent
+      let metadata = tokenExport.metadata
+      return .run { _ in
+        let bookmark = await historyClient.createBookmark(url)
+        let entry = ImportHistoryEntry(
+          fileName: fileName,
+          bookmarkData: bookmark,
+          metadata: metadata
+        )
+        await historyClient.saveImportEntry(entry)
+      }
+      
+    case .historyLoaded(let history):
+      state.importHistory = history
       return .none
+      
+    case .historySaved:
+      return .run { send in
+        let history = await historyClient.getImportHistory()
+        await send(.internal(.historyLoaded(history)))
+      }
       
     case .applyFilters:
       applyFiltersToNodes(state: &state)

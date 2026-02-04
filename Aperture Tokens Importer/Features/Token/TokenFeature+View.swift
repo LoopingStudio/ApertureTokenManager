@@ -86,9 +86,20 @@ struct ApertureTokensView: View {
         onSelectFile: { send(.selectFileTapped) },
         metadata: store.metadata
       )
+      
+      if !store.importHistory.isEmpty {
+        ImportHistoryView(
+          history: store.importHistory,
+          onEntryTapped: { send(.historyEntryTapped($0)) },
+          onRemove: { send(.removeHistoryEntry($0)) },
+          onClear: { send(.clearHistory) }
+        )
+        .frame(maxWidth: 500)
+      }
     }
     .padding()
     .frame(maxHeight: .infinity)
+    .onAppear { send(.onAppear) }
   }
 
   private var contentView: some View {

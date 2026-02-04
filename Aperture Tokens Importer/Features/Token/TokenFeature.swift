@@ -6,6 +6,7 @@ import SwiftUI
 public struct TokenFeature: Sendable {
   @Dependency(\.tokenClient) var tokenClient
   @Dependency(\.fileClient) var fileClient
+  @Dependency(\.historyClient) var historyClient
 
   @ObservableState
   public struct State: Equatable {
@@ -18,6 +19,10 @@ public struct TokenFeature: Sendable {
     var selectedNode: TokenNode?
     var expandedNodes: Set<TokenNode.ID> = []
     var allNodes: [TokenNode] = []
+    var currentFileURL: URL?
+    
+    // History
+    var importHistory: [ImportHistoryEntry] = []
     
     // Export filters
     var excludeTokensStartingWithHash: Bool = false
@@ -37,6 +42,8 @@ public struct TokenFeature: Sendable {
         selectedNode: nil,
         expandedNodes: [],
         allNodes: [],
+        currentFileURL: nil,
+        importHistory: [],
         excludeTokensStartingWithHash: false,
         excludeTokensEndingWithHover: false,
         splitViewRatio: 0.6
@@ -53,10 +60,12 @@ public struct TokenFeature: Sendable {
     @CasePathable
     public enum Internal: Sendable, Equatable {
       case loadFile(URL)
-      case exportLoaded(TokenExport)
+      case exportLoaded(TokenExport, URL)
       case fileLoadingStarted
       case fileLoadingFailed(String)
       case applyFilters
+      case historyLoaded([ImportHistoryEntry])
+      case historySaved
     }
 
     @CasePathable
@@ -70,6 +79,10 @@ public struct TokenFeature: Sendable {
       case expandNode(TokenNode.ID)
       case collapseNode(TokenNode.ID)
       case keyPressed(KeyEquivalent)
+      case onAppear
+      case historyEntryTapped(ImportHistoryEntry)
+      case removeHistoryEntry(UUID)
+      case clearHistory
     }
   }
 

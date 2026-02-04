@@ -15,8 +15,41 @@ extension TokenFeature {
         }
       }
     case .resetFile:
+      let history = state.importHistory
       state = .initial
+      state.importHistory = history
       return .none
+      
+    case .onAppear:
+      return .run { send in
+        let history = await historyClient.getImportHistory()
+        await send(.internal(.historyLoaded(history)))
+      }
+      
+    case .historyEntryTapped(let entry):
+      guard let url = entry.resolveURL() else {
+        return .run { send in
+          await historyClient.removeImportEntry(entry.id)
+          await send(.internal(.historySaved))
+        }
+      }
+      _ = url.startAccessingSecurityScopedResource()
+      return .run { send in
+        await send(.internal(.fileLoadingStarted))
+        await send(.internal(.loadFile(url)))
+      }
+      
+    case .removeHistoryEntry(let id):
+      return .run { send in
+        await historyClient.removeImportEntry(id)
+        await send(.internal(.historySaved))
+      }
+      
+    case .clearHistory:
+      return .run { send in
+        await historyClient.clearImportHistory()
+        await send(.internal(.historyLoaded([])))
+      }
     case .toggleNode(let id):
       updateNodeRecursively(nodes: &state.rootNodes, targetId: id)
       return .none
