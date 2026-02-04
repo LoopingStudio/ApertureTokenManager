@@ -18,10 +18,14 @@ struct ImportHistoryView: View {
         Spacer()
         
         if !history.isEmpty {
-          Button("Effacer") { onClear() }
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            .buttonStyle(.plain)
+          Button("Effacer") {
+            withAnimation(.easeOut(duration: 0.2)) {
+              onClear()
+            }
+          }
+          .font(.caption)
+          .foregroundStyle(.secondary)
+          .buttonStyle(.plain)
         }
       }
       
@@ -31,15 +35,25 @@ struct ImportHistoryView: View {
           .foregroundStyle(.tertiary)
           .frame(maxWidth: .infinity, alignment: .center)
           .padding(.vertical, 8)
+          .transition(.opacity.combined(with: .scale(scale: 0.95)))
       } else {
         ScrollView {
           VStack(spacing: 6) {
-            ForEach(history) { entry in
+            ForEach(Array(history.enumerated()), id: \.element.id) { index, entry in
               ImportHistoryRow(
                 entry: entry,
                 onTap: { onEntryTapped(entry) },
-                onRemove: { onRemove(entry.id) }
+                onRemove: {
+                  withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
+                    onRemove(entry.id)
+                  }
+                }
               )
+              .transition(.asymmetric(
+                insertion: .opacity.combined(with: .move(edge: .top)).combined(with: .scale(scale: 0.95)),
+                removal: .opacity.combined(with: .move(edge: .trailing)).combined(with: .scale(scale: 0.9))
+              ))
+              .animation(.spring(response: 0.4, dampingFraction: 0.75).delay(Double(index) * 0.05), value: history.count)
             }
           }
         }
@@ -51,6 +65,7 @@ struct ImportHistoryView: View {
       RoundedRectangle(cornerRadius: 12)
         .fill(Color(nsColor: .controlBackgroundColor))
     )
+    .animation(.easeInOut(duration: 0.25), value: history.isEmpty)
   }
 }
 
@@ -61,12 +76,15 @@ struct ImportHistoryRow: View {
   let onTap: () -> Void
   let onRemove: () -> Void
   @State private var isHovering = false
+  @State private var isPressed = false
   
   var body: some View {
     HStack(spacing: 10) {
       Image(systemName: "doc.fill")
         .font(.title3)
         .foregroundStyle(.purple)
+        .scaleEffect(isHovering ? 1.1 : 1.0)
+        .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isHovering)
       
       VStack(alignment: .leading, spacing: 2) {
         HStack(spacing: 4) {
@@ -97,16 +115,16 @@ struct ImportHistoryRow: View {
       
       Spacer()
       
-      if isHovering {
-        Button {
-          onRemove()
-        } label: {
-          Image(systemName: "xmark.circle.fill")
-            .foregroundStyle(.secondary)
-        }
-        .buttonStyle(.plain)
-        .transition(.opacity)
+      Button {
+        onRemove()
+      } label: {
+        Image(systemName: "xmark.circle.fill")
+          .foregroundStyle(.secondary)
+          .opacity(isHovering ? 1 : 0)
+          .scaleEffect(isHovering ? 1 : 0.5)
       }
+      .buttonStyle(.plain)
+      .animation(.spring(response: 0.25, dampingFraction: 0.7), value: isHovering)
     }
     .padding(.horizontal, 10)
     .padding(.vertical, 8)
@@ -114,9 +132,26 @@ struct ImportHistoryRow: View {
       RoundedRectangle(cornerRadius: 8)
         .fill(isHovering ? Color.accentColor.opacity(0.1) : Color.clear)
     )
+    .scaleEffect(isPressed ? 0.98 : 1.0)
+    .animation(.spring(response: 0.2, dampingFraction: 0.7), value: isPressed)
+    .animation(.easeOut(duration: 0.15), value: isHovering)
     .contentShape(Rectangle())
-    .onTapGesture { onTap() }
-    .onHover { isHovering = $0 }
+    .onTapGesture {
+      withAnimation(.spring(response: 0.2, dampingFraction: 0.6)) {
+        isPressed = true
+      }
+      DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+        withAnimation(.spring(response: 0.2, dampingFraction: 0.6)) {
+          isPressed = false
+        }
+        onTap()
+      }
+    }
+    .onHover { hovering in
+      withAnimation(.easeOut(duration: 0.15)) {
+        isHovering = hovering
+      }
+    }
   }
 }
 
@@ -138,10 +173,14 @@ struct ComparisonHistoryView: View {
         Spacer()
         
         if !history.isEmpty {
-          Button("Effacer") { onClear() }
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            .buttonStyle(.plain)
+          Button("Effacer") {
+            withAnimation(.easeOut(duration: 0.2)) {
+              onClear()
+            }
+          }
+          .font(.caption)
+          .foregroundStyle(.secondary)
+          .buttonStyle(.plain)
         }
       }
       
@@ -151,15 +190,25 @@ struct ComparisonHistoryView: View {
           .foregroundStyle(.tertiary)
           .frame(maxWidth: .infinity, alignment: .center)
           .padding(.vertical, 8)
+          .transition(.opacity.combined(with: .scale(scale: 0.95)))
       } else {
         ScrollView {
           VStack(spacing: 6) {
-            ForEach(history) { entry in
+            ForEach(Array(history.enumerated()), id: \.element.id) { index, entry in
               ComparisonHistoryRow(
                 entry: entry,
                 onTap: { onEntryTapped(entry) },
-                onRemove: { onRemove(entry.id) }
+                onRemove: {
+                  withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
+                    onRemove(entry.id)
+                  }
+                }
               )
+              .transition(.asymmetric(
+                insertion: .opacity.combined(with: .move(edge: .top)).combined(with: .scale(scale: 0.95)),
+                removal: .opacity.combined(with: .move(edge: .trailing)).combined(with: .scale(scale: 0.9))
+              ))
+              .animation(.spring(response: 0.4, dampingFraction: 0.75).delay(Double(index) * 0.05), value: history.count)
             }
           }
         }
@@ -171,6 +220,7 @@ struct ComparisonHistoryView: View {
       RoundedRectangle(cornerRadius: 12)
         .fill(Color(nsColor: .controlBackgroundColor))
     )
+    .animation(.easeInOut(duration: 0.25), value: history.isEmpty)
   }
 }
 
@@ -181,12 +231,15 @@ struct ComparisonHistoryRow: View {
   let onTap: () -> Void
   let onRemove: () -> Void
   @State private var isHovering = false
+  @State private var isPressed = false
   
   var body: some View {
     HStack(spacing: 10) {
       Image(systemName: "doc.text.magnifyingglass")
         .font(.title3)
         .foregroundStyle(.blue)
+        .scaleEffect(isHovering ? 1.1 : 1.0)
+        .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isHovering)
       
       VStack(alignment: .leading, spacing: 4) {
         HStack(spacing: 4) {
@@ -194,6 +247,8 @@ struct ComparisonHistoryRow: View {
           Image(systemName: "arrow.right")
             .font(.caption2)
             .foregroundStyle(.secondary)
+            .scaleEffect(isHovering ? 1.2 : 1.0)
+            .animation(.spring(response: 0.3, dampingFraction: 0.6).delay(0.05), value: isHovering)
           fileVersionLabel(entry.newFile, color: .green)
         }
         .font(.subheadline)
@@ -210,16 +265,16 @@ struct ComparisonHistoryRow: View {
       
       Spacer()
       
-      if isHovering {
-        Button {
-          onRemove()
-        } label: {
-          Image(systemName: "xmark.circle.fill")
-            .foregroundStyle(.secondary)
-        }
-        .buttonStyle(.plain)
-        .transition(.opacity)
+      Button {
+        onRemove()
+      } label: {
+        Image(systemName: "xmark.circle.fill")
+          .foregroundStyle(.secondary)
+          .opacity(isHovering ? 1 : 0)
+          .scaleEffect(isHovering ? 1 : 0.5)
       }
+      .buttonStyle(.plain)
+      .animation(.spring(response: 0.25, dampingFraction: 0.7), value: isHovering)
     }
     .padding(.horizontal, 10)
     .padding(.vertical, 8)
@@ -227,9 +282,26 @@ struct ComparisonHistoryRow: View {
       RoundedRectangle(cornerRadius: 8)
         .fill(isHovering ? Color.accentColor.opacity(0.1) : Color.clear)
     )
+    .scaleEffect(isPressed ? 0.98 : 1.0)
+    .animation(.spring(response: 0.2, dampingFraction: 0.7), value: isPressed)
+    .animation(.easeOut(duration: 0.15), value: isHovering)
     .contentShape(Rectangle())
-    .onTapGesture { onTap() }
-    .onHover { isHovering = $0 }
+    .onTapGesture {
+      withAnimation(.spring(response: 0.2, dampingFraction: 0.6)) {
+        isPressed = true
+      }
+      DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+        withAnimation(.spring(response: 0.2, dampingFraction: 0.6)) {
+          isPressed = false
+        }
+        onTap()
+      }
+    }
+    .onHover { hovering in
+      withAnimation(.easeOut(duration: 0.15)) {
+        isHovering = hovering
+      }
+    }
   }
   
   private var summaryBadges: some View {

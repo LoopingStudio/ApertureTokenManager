@@ -44,8 +44,8 @@ public struct TokenFeature: Sendable {
         allNodes: [],
         currentFileURL: nil,
         importHistory: [],
-        excludeTokensStartingWithHash: false,
-        excludeTokensEndingWithHover: false,
+        excludeTokensStartingWithHash: UserDefaults.standard.bool(forKey: "filter.excludeHash"),
+        excludeTokensEndingWithHover: UserDefaults.standard.bool(forKey: "filter.excludeHover"),
         splitViewRatio: 0.6
       )
     }

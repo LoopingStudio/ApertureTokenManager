@@ -5,6 +5,7 @@ import UniformTypeIdentifiers
 @ViewAction(for: CompareFeature.self)
 struct CompareView: View {
   @Bindable var store: StoreOf<CompareFeature>
+  @Namespace private var tabNamespace
 
   var body: some View {
     VStack(spacing: 0) {
@@ -16,6 +17,7 @@ struct CompareView: View {
       }
     }
     .animation(.easeInOut, value: store.oldFile.isLoaded && store.newFile.isLoaded)
+    .animation(.easeInOut(duration: 0.25), value: store.selectedTab)
   }
 
   // MARK: - Header
@@ -30,11 +32,17 @@ struct CompareView: View {
         Spacer()
 
         if store.changes != nil {
-          Button("Nouvelle Comparaison") { send(.resetComparison) }
-            .controlSize(.small)
-          Button("Exporter pour Notion") { send(.exportToNotionTapped) }
-            .controlSize(.small)
-            .buttonStyle(.borderedProminent)
+          HStack(spacing: 8) {
+            Button("Nouvelle Comparaison") { send(.resetComparison) }
+              .controlSize(.small)
+            Button("Exporter pour Notion") { send(.exportToNotionTapped) }
+              .controlSize(.small)
+              .buttonStyle(.borderedProminent)
+          }
+          .transition(.asymmetric(
+            insertion: .scale(scale: 0.9).combined(with: .opacity),
+            removal: .opacity
+          ))
         }
       }
 
@@ -142,8 +150,15 @@ struct CompareView: View {
       if let changes = store.changes {
         tabContent(for: store.selectedTab, changes: changes)
           .padding()
+          .id(store.selectedTab)
+          .transition(.opacity.combined(with: .scale(scale: 0.95)))
+//          .transition(.asymmetric(
+//            insertion: .opacity.combined(with: .move(edge: .trailing)),
+//            removal: .opacity.combined(with: .move(edge: .leading))
+//          ))
       }
     }
+    .animation(.spring(response: 0.35, dampingFraction: 0.85), value: store.selectedTab)
   }
 
   // MARK: - Tabs
@@ -151,7 +166,9 @@ struct CompareView: View {
   private var tabs: some View {
     HStack {
       ForEach(CompareFeature.ComparisonTab.allCases, id: \.self) { tab in
-        Button(action: { send(.tabTapped(tab)) }) {
+        Button {
+          send(.tabTapped(tab))
+        } label: {
           VStack(spacing: 4) {
             Text(tab.rawValue)
               .font(.headline)
@@ -166,10 +183,13 @@ struct CompareView: View {
           .padding(.horizontal, 16)
           .padding(.vertical, 8)
           .contentShape(.rect)
-          .background(
-            RoundedRectangle(cornerRadius: 8)
-              .fill(store.selectedTab == tab ? Color.accentColor.opacity(0.1) : Color.clear)
-          )
+          .background {
+            if store.selectedTab == tab {
+              RoundedRectangle(cornerRadius: 8)
+                .fill(Color.accentColor.opacity(0.1))
+                .matchedGeometryEffect(id: "activeTab", in: tabNamespace)
+            }
+          }
           .padding(.vertical, 8)
         }
         .buttonStyle(.plain)

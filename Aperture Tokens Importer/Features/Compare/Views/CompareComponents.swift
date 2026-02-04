@@ -50,13 +50,13 @@ struct ColorSquareWithPopover: View {
   var body: some View {
     RoundedRectangle(cornerRadius: 4)
       .fill(Color(hex: value.hex))
-      .frame(width: 20, height: 20)
+      .frame(width: 24, height: 24)
       .overlay(
         Text(label)
           .font(.caption2)
           .fontWeight(.bold)
           .foregroundStyle(.white)
-          .shadow(color: .black, radius: 1, x: 0, y: 0)
+          .shadow(color: .black.opacity(0.8), radius: 1, x: 0, y: 0)
       )
       .onTapGesture {
         showPopover.toggle()
@@ -126,10 +126,10 @@ struct CompactColorPreview: View {
   }
 
   var body: some View {
-    HStack(spacing: 6) {
+    HStack(spacing: 8) {
       // Legacy colors
       if let legacy = modes.legacy {
-        VStack(spacing: 3) {
+        VStack(spacing: 4) {
           if shouldShowLabels {
             Text("Legacy")
               .font(.caption2)
@@ -145,11 +145,12 @@ struct CompactColorPreview: View {
             }
           }
         }
+        .frame(minWidth: 64)
       }
 
       // New Brand colors
       if let newBrand = modes.newBrand {
-        VStack(spacing: 3) {
+        VStack(spacing: 4) {
           if shouldShowLabels {
             Text("New Brand")
               .font(.caption2)
@@ -165,6 +166,7 @@ struct CompactColorPreview: View {
             }
           }
         }
+        .frame(minWidth: 64)
       }
     }
   }

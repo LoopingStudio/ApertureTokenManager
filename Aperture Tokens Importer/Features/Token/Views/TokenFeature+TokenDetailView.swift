@@ -111,32 +111,9 @@ struct TokenDetailView: View {
       Spacer()
       
       if let modes = token.modes {
-        VStack(alignment: .trailing, spacing: 4) {
-          if let lightValue = modes.legacy?.light {
-            colorPreviewWithInfo(
-              value: lightValue,
-              brand: Brand.legacy
-            )
-          }
-          if let lightValue = modes.newBrand?.light {
-            colorPreviewWithInfo(
-              value: lightValue,
-              brand: Brand.newBrand
-            )
-          }
-        }
+        CompactColorPreview(modes: modes)
       }
     }
-  }
-
-  private func colorPreview(color: Color, size: CGFloat) -> some View {
-    RoundedRectangle(cornerRadius: 4)
-      .fill(color)
-      .frame(width: size, height: size)
-      .overlay {
-        RoundedRectangle(cornerRadius: 4)
-          .stroke(Color.secondary.opacity(0.3), lineWidth: 0.5)
-      }
   }
 
   private func brandTheme(brandName: String, theme: TokenThemes.Appearance) -> some View {

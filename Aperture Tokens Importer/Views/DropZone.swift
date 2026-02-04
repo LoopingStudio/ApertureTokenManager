@@ -15,6 +15,11 @@ struct DropZone: View {
   let metadata: TokenMetadata?
   
   @State private var isHovering = false
+  @State private var isDragHovering = false
+  @State private var isPressed = false
+  @State private var iconScale: CGFloat = 1.0
+  @State private var showContent = false
+  @State private var checkmarkRotation: Double = 0
   
   init(
     title: String,
@@ -55,6 +60,10 @@ struct DropZone: View {
         
         if let metadata = metadata {
           metadataView(metadata)
+            .transition(.asymmetric(
+              insertion: .scale(scale: 0.8).combined(with: .opacity),
+              removal: .opacity
+            ))
         }
       }
       
@@ -63,6 +72,8 @@ struct DropZone: View {
           onSelectFile()
         }
         .controlSize(.small)
+        .scaleEffect(showContent ? 1 : 0.8)
+        .opacity(showContent ? 1 : 0)
       }
       
       if isLoaded, let onRemove = onRemove {
@@ -71,16 +82,32 @@ struct DropZone: View {
         }
         .controlSize(.small)
         .buttonStyle(.bordered)
+        .transition(.asymmetric(
+          insertion: .scale(scale: 0.8).combined(with: .opacity),
+          removal: .scale(scale: 0.8).combined(with: .opacity)
+        ))
       }
     }
     .frame(maxWidth: .infinity, minHeight: 200)
     .padding()
     .background(backgroundView)
+    .scaleEffect(isPressed ? 0.98 : (isDragHovering ? 1.02 : 1.0))
+    .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isDragHovering)
+    .animation(.spring(response: 0.2, dampingFraction: 0.6), value: isPressed)
     .onHover { hovering in
       withAnimation(.easeInOut(duration: 0.2)) {
         isHovering = hovering
       }
+      // Subtle icon bounce on hover
       if hovering && !isLoaded {
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) {
+          iconScale = 1.1
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+          withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+            iconScale = 1.0
+          }
+        }
         NSCursor.pointingHand.push()
       } else {
         NSCursor.pop()
@@ -88,64 +115,108 @@ struct DropZone: View {
     }
     .onTapGesture {
       if !isLoaded {
-        onSelectFile()
+        // Press feedback
+        withAnimation(.spring(response: 0.1, dampingFraction: 0.6)) {
+          isPressed = true
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+          withAnimation(.spring(response: 0.2, dampingFraction: 0.6)) {
+            isPressed = false
+          }
+          onSelectFile()
+        }
       }
     }
-    .onDrop(of: [UTType.json], isTargeted: nil) { providers in
-      onDrop(providers)
+    .onDrop(of: [UTType.json], isTargeted: Binding(
+      get: { isDragHovering },
+      set: { newValue in
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+          isDragHovering = newValue
+        }
+      }
+    )) { providers in
+      return onDrop(providers)
+    }
+    .onAppear {
+      withAnimation(.easeOut(duration: 0.4).delay(0.1)) {
+        showContent = true
+      }
+    }
+    .onChange(of: isLoaded) { _, newValue in
+      if newValue {
+        // Celebrate with a checkmark rotation
+        withAnimation(.spring(response: 0.5, dampingFraction: 0.6)) {
+          checkmarkRotation = 360
+        }
+      } else {
+        checkmarkRotation = 0
+      }
     }
   }
   
   @ViewBuilder
   private var iconView: some View {
-    if isLoading {
-      ProgressView()
-        .progressViewStyle(CircularProgressViewStyle())
-        .scaleEffect(1.2)
-    } else if hasError {
-      Image(systemName: "exclamationmark.circle.fill")
-        .font(.largeTitle)
-        .foregroundStyle(.red)
-    } else if isLoaded {
-      Image(systemName: "checkmark.circle.fill")
-        .font(.largeTitle)
-        .foregroundStyle(.green)
-    } else {
-      Image(systemName: "doc.text")
-        .font(.largeTitle)
-        .foregroundStyle(primaryColor)
+    Group {
+      if isLoading {
+        ProgressView()
+          .progressViewStyle(CircularProgressViewStyle())
+          .scaleEffect(1.2)
+      } else if hasError {
+        Image(systemName: "exclamationmark.circle.fill")
+          .font(.largeTitle)
+          .foregroundStyle(.red)
+          .symbolEffect(.pulse, options: .repeating)
+      } else if isLoaded {
+        Image(systemName: "checkmark.circle.fill")
+          .font(.largeTitle)
+          .foregroundStyle(.green)
+          .rotationEffect(.degrees(checkmarkRotation))
+          .scaleEffect(checkmarkRotation > 0 ? 1.0 : 0.5)
+      } else {
+        Image(systemName: "doc.text")
+          .font(.largeTitle)
+          .foregroundStyle(primaryColor)
+          .scaleEffect(iconScale)
+          .scaleEffect(isDragHovering ? 1.15 : 1.0)
+          .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isDragHovering)
+      }
     }
+    .contentTransition(.symbolEffect(.replace))
   }
   
   @ViewBuilder
   private var statusView: some View {
-    if isLoading {
-      Text("Chargement en cours...")
-        .font(.caption)
-        .foregroundStyle(.secondary)
-    } else if hasError {
-      VStack(spacing: 4) {
-        Text("Erreur de chargement")
+    Group {
+      if isLoading {
+        Text("Chargement en cours...")
           .font(.caption)
-          .foregroundStyle(.red)
-        
-        if let errorMessage = errorMessage {
-          Text(errorMessage)
-            .font(.caption2)
-            .foregroundStyle(.secondary)
-            .multilineTextAlignment(.center)
+          .foregroundStyle(.secondary)
+      } else if hasError {
+        VStack(spacing: 4) {
+          Text("Erreur de chargement")
+            .font(.caption)
+            .foregroundStyle(.red)
+          
+          if let errorMessage = errorMessage {
+            Text(errorMessage)
+              .font(.caption2)
+              .foregroundStyle(.secondary)
+              .multilineTextAlignment(.center)
+          }
         }
+      } else if isLoaded {
+        Text("Fichier chargé")
+          .font(.caption)
+          .foregroundStyle(.green)
+      } else {
+        Text(isDragHovering ? "Déposez le fichier ici" : subtitle)
+          .font(.caption)
+          .foregroundStyle(isDragHovering ? primaryColor : .secondary)
+          .multilineTextAlignment(.center)
+          .animation(.easeInOut(duration: 0.2), value: isDragHovering)
       }
-    } else if isLoaded {
-      Text("Fichier chargé")
-        .font(.caption)
-        .foregroundStyle(.green)
-    } else {
-      Text(subtitle)
-        .font(.caption)
-        .foregroundStyle(.secondary)
-        .multilineTextAlignment(.center)
     }
+    .contentTransition(.interpolate)
   }
   
   private func metadataView(_ metadata: TokenMetadata) -> some View {
@@ -176,8 +247,20 @@ struct DropZone: View {
       .fill(backgroundColor)
       .overlay(
         RoundedRectangle(cornerRadius: 12)
-          .stroke(borderColor, style: StrokeStyle(lineWidth: 2, dash: [8]))
+          .stroke(
+            borderColor,
+            style: StrokeStyle(
+              lineWidth: isDragHovering ? 3 : 2,
+              dash: isLoaded ? [] : [8]
+            )
+          )
       )
+      .shadow(
+        color: isDragHovering ? primaryColor.opacity(0.3) : .clear,
+        radius: isDragHovering ? 8 : 0
+      )
+      .animation(.easeInOut(duration: 0.2), value: isDragHovering)
+      .animation(.easeInOut(duration: 0.3), value: isLoaded)
   }
   
   private var backgroundColor: Color {
