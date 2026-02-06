@@ -209,21 +209,75 @@ public struct UsageAnalysisConfig: Equatable, Sendable {
 }
 
 /// Dossier à scanner (avant analyse)
-public struct ScanDirectory: Equatable, Sendable, Identifiable {
-  public let id = UUID()
+public struct ScanDirectory: Equatable, Sendable, Identifiable, Codable {
+  public let id: UUID
   
   /// Nom affiché
   let name: String
   
-  /// URL du dossier
-  let url: URL
+  /// URL du dossier - reconstruite depuis le bookmark
+  var url: URL
   
   /// Bookmark pour accès persistant
   let bookmarkData: Data?
   
   public init(name: String, url: URL, bookmarkData: Data?) {
+    self.id = UUID()
     self.name = name
     self.url = url
     self.bookmarkData = bookmarkData
+  }
+  
+  // MARK: - Codable
+  
+  enum CodingKeys: String, CodingKey {
+    case id, name, bookmarkData
+  }
+  
+  public init(from decoder: Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    self.id = try container.decode(UUID.self, forKey: .id)
+    self.name = try container.decode(String.self, forKey: .name)
+    self.bookmarkData = try container.decodeIfPresent(Data.self, forKey: .bookmarkData)
+    
+    // Reconstruire l'URL depuis le bookmark
+    if let bookmarkData = self.bookmarkData {
+      var isStale = false
+      if let resolvedURL = try? URL(
+        resolvingBookmarkData: bookmarkData,
+        options: .withSecurityScope,
+        relativeTo: nil,
+        bookmarkDataIsStale: &isStale
+      ) {
+        self.url = resolvedURL
+      } else {
+        // Fallback: URL invalide mais on garde l'entrée
+        self.url = URL(fileURLWithPath: "/invalid")
+      }
+    } else {
+      self.url = URL(fileURLWithPath: "/invalid")
+    }
+  }
+  
+  public func encode(to encoder: Encoder) throws {
+    var container = encoder.container(keyedBy: CodingKeys.self)
+    try container.encode(id, forKey: .id)
+    try container.encode(name, forKey: .name)
+    try container.encodeIfPresent(bookmarkData, forKey: .bookmarkData)
+  }
+  
+  /// Tente de résoudre l'URL et démarrer l'accès security-scoped
+  public func resolveAndAccess() -> URL? {
+    guard let bookmarkData = bookmarkData else { return nil }
+    var isStale = false
+    guard let resolvedURL = try? URL(
+      resolvingBookmarkData: bookmarkData,
+      options: .withSecurityScope,
+      relativeTo: nil,
+      bookmarkDataIsStale: &isStale
+    ) else { return nil }
+    
+    _ = resolvedURL.startAccessingSecurityScopedResource()
+    return resolvedURL
   }
 }

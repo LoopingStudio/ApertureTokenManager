@@ -28,10 +28,20 @@ extension AnalysisFeature {
       return .none
       
     case .onAppear:
+      // Résoudre les bookmarks pour avoir des URLs valides
+      state.$directoriesToScan.withLock { directories in
+        for i in 0..<directories.count {
+          if let resolvedURL = directories[i].resolveAndAccess() {
+            directories[i].url = resolvedURL
+          }
+        }
+      }
       return .none
       
     case .removeDirectory(let id):
-      state.directoriesToScan.removeAll { $0.id == id }
+      state.$directoriesToScan.withLock { directories in
+        directories.removeAll { $0.id == id }
+      }
       return .none
       
     case .startAnalysisTapped:

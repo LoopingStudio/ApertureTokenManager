@@ -23,8 +23,10 @@ extension AnalysisFeature {
       )
       
       // Éviter les doublons
-      if !state.directoriesToScan.contains(where: { $0.url == url }) {
-        state.directoriesToScan.append(directory)
+      state.$directoriesToScan.withLock { directories in
+        if !directories.contains(where: { $0.url == url }) {
+          directories.append(directory)
+        }
       }
       return .none
     }

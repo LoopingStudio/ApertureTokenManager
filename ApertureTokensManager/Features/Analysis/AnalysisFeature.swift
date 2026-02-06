@@ -21,8 +21,8 @@ public struct AnalysisFeature: Sendable {
     // Configuration de l'analyse
     var config: UsageAnalysisConfig = .default
     
-    // Dossiers à scanner
-    var directoriesToScan: [ScanDirectory] = []
+    // Dossiers à scanner (persistés)
+    @Shared(.analysisDirectories) var directoriesToScan: [ScanDirectory]
     
     // Résultat de l'analyse
     var report: TokenUsageReport?

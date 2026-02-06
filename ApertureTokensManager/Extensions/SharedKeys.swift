@@ -89,3 +89,15 @@ extension SharedKey where Self == FileStorageKey<DesignSystemBase?>.Default {
     Self[.fileStorage(.designSystemBase), default: nil]
   }
 }
+
+// MARK: - Analysis Directories
+
+extension URL {
+  static let analysisDirectories = Self.documentsDirectory.appending(component: "analysis-directories.json")
+}
+
+extension SharedKey where Self == FileStorageKey<[ScanDirectory]>.Default {
+  static var analysisDirectories: Self {
+    Self[.fileStorage(.analysisDirectories), default: []]
+  }
+}

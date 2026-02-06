@@ -457,6 +457,79 @@ Options de config :
 
 ---
 
+## Recherche dans TokenTree
+
+### Architecture
+La recherche est gérée au niveau du composant `TokenTree` sans créer de feature TCA séparée :
+```swift
+struct TokenTree: View {
+  let nodes: [TokenNode]
+  let searchText: String  // Passé depuis le parent
+  // ...
+}
+```
+
+### TokenTreeSearchHelper
+Helper statique pour le filtrage et le highlight :
+```swift
+enum TokenTreeSearchHelper {
+  /// Filtre les nodes et retourne les IDs des parents à auto-expand
+  static func filterNodes(
+    _ nodes: [TokenNode],
+    searchText: String
+  ) -> (nodes: [TokenNode], autoExpandedIds: Set<TokenNode.ID>)
+
+  /// Crée un Text avec le match highlighté
+  static func highlightedText(
+    _ text: String,
+    searchText: String,
+    baseColor: Color
+  ) -> Text
+}
+```
+
+### Auto-expand des parents
+Quand un enfant matche, tous ses parents sont automatiquement expand :
+```swift
+private var effectiveExpandedNodes: Set<TokenNode.ID> {
+  expandedNodes.union(filteredData.autoExpandedIds)
+}
+```
+
+### Highlight avec Text concatenation
+Utiliser `+` pour concaténer des `Text` avec styles différents :
+```swift
+Text(before).foregroundStyle(baseColor) +
+Text(match).foregroundStyle(.purple).bold() +
+Text(after).foregroundStyle(baseColor)
+```
+
+---
+
+## Liquid Glass (macOS 26)
+
+### Styles de boutons
+```swift
+// Bouton standard avec teinte
+.buttonStyle(.glass(.regular.tint(.blue)))
+
+// Bouton proéminent (action principale)
+.buttonStyle(.glassProminent)
+```
+
+### Effet sur conteneurs
+```swift
+// Appliquer l'effet glass à un conteneur
+.glassEffect(.regular.tint(.green), in: .rect(cornerRadius: 16))
+```
+
+### Migration depuis styles custom
+Remplacer les anciens styles par les nouveaux :
+- `PressableButtonStyle` → `.buttonStyle(.glass)`
+- `InteractiveCardModifier` → `.glassEffect()` ou `.buttonStyle(.glass)`
+
+---
+
 ## Notes pour le futur
 
 ### Localisation

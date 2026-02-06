@@ -5,6 +5,7 @@ import ComposableArchitecture
 struct TokenBrowserView: View {
   @Bindable var store: StoreOf<TokenBrowserFeature>
   @Environment(\.dismiss) private var dismiss
+  @FocusState private var isSearchFocused: Bool
   
   var body: some View {
     VStack(spacing: 0) {
@@ -13,6 +14,7 @@ struct TokenBrowserView: View {
       browserContent
     }
     .frame(minWidth: 700, idealWidth: 900, minHeight: 500, idealHeight: 600)
+    .searchFocusShortcut($isSearchFocused)
   }
   
   private var header: some View {
@@ -65,26 +67,27 @@ struct TokenBrowserView: View {
     }
   }
   
+  /// Données filtrées pour la recherche
+  private var filteredData: (nodes: [TokenNode], autoExpandedIds: Set<TokenNode.ID>) {
+    guard !store.searchText.isEmpty else {
+      return (store.tokens, [])
+    }
+    return TokenTreeSearchHelper.filterNodes(store.tokens, searchText: store.searchText)
+  }
+  
+  /// Nombre de tokens filtrés
+  private var filteredTokenCount: Int {
+    TokenTreeSearchHelper.countFilteredTokens(filteredData.nodes)
+  }
+  
   private var tokenListView: some View {
     VStack(spacing: 0) {
-      // Search field
-      HStack(spacing: 8) {
-        Image(systemName: "magnifyingglass")
-          .foregroundStyle(.secondary)
-        TextField("Rechercher...", text: $store.searchText)
-          .textFieldStyle(.plain)
-        if !store.searchText.isEmpty {
-          Button {
-            store.searchText = ""
-          } label: {
-            Image(systemName: "xmark.circle.fill")
-              .foregroundStyle(.secondary)
-          }
-          .buttonStyle(.plain)
-        }
-      }
-      .padding(8)
-      .background(Color(nsColor: .controlBackgroundColor))
+      SearchField(
+        text: $store.searchText,
+        resultCount: store.searchText.isEmpty ? nil : filteredTokenCount,
+        totalCount: store.searchText.isEmpty ? nil : store.tokenCount,
+        isFocused: $isSearchFocused
+      )
       
       Divider()
       

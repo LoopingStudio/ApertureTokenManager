@@ -387,6 +387,23 @@ extension View {
 // MARK: - Search Helper
 
 enum TokenTreeSearchHelper {
+  /// Compte le nombre de tokens (feuilles) dans une liste de nodes filtrés
+  static func countFilteredTokens(_ nodes: [TokenNode]) -> Int {
+    var count = 0
+    func countRecursive(_ nodes: [TokenNode]) {
+      for node in nodes {
+        if node.type == .token {
+          count += 1
+        }
+        if let children = node.children {
+          countRecursive(children)
+        }
+      }
+    }
+    countRecursive(nodes)
+    return count
+  }
+  
   /// Filtre les nodes qui matchent le texte de recherche et retourne les IDs des parents à expand
   static func filterNodes(
     _ nodes: [TokenNode],

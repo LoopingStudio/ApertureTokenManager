@@ -5,6 +5,7 @@ import UniformTypeIdentifiers
 @ViewAction(for: ImportFeature.self)
 struct ImportView: View {
   @Bindable var store: StoreOf<ImportFeature>
+  @FocusState private var isSearchFocused: Bool
 
   var body: some View {
     VStack(spacing: 0) {
@@ -15,6 +16,7 @@ struct ImportView: View {
         fileSelectionArea
       }
     }
+    .searchFocusShortcut($isSearchFocused)
   }
 
   private var header: some View {
@@ -126,26 +128,32 @@ struct ImportView: View {
     }
   }
 
+  /// Données filtrées pour la recherche
+  private var filteredData: (nodes: [TokenNode], autoExpandedIds: Set<TokenNode.ID>) {
+    guard !store.searchText.isEmpty else {
+      return (store.rootNodes, [])
+    }
+    return TokenTreeSearchHelper.filterNodes(store.rootNodes, searchText: store.searchText)
+  }
+  
+  /// Nombre de tokens filtrés
+  private var filteredTokenCount: Int {
+    TokenTreeSearchHelper.countFilteredTokens(filteredData.nodes)
+  }
+  
+  /// Nombre total de tokens
+  private var totalTokenCount: Int {
+    TokenHelpers.countLeafTokens(store.rootNodes)
+  }
+  
   private var nodesView: some View {
     VStack(spacing: 0) {
-      // Search field
-      HStack(spacing: 8) {
-        Image(systemName: "magnifyingglass")
-          .foregroundStyle(.secondary)
-        TextField("Rechercher...", text: $store.searchText)
-          .textFieldStyle(.plain)
-        if !store.searchText.isEmpty {
-          Button {
-            store.searchText = ""
-          } label: {
-            Image(systemName: "xmark.circle.fill")
-              .foregroundStyle(.secondary)
-          }
-          .buttonStyle(.plain)
-        }
-      }
-      .padding(8)
-      .background(Color(nsColor: .controlBackgroundColor))
+      SearchField(
+        text: $store.searchText,
+        resultCount: store.searchText.isEmpty ? nil : filteredTokenCount,
+        totalCount: store.searchText.isEmpty ? nil : totalTokenCount,
+        isFocused: $isSearchFocused
+      )
       
       Divider()
       
