@@ -23,6 +23,12 @@ struct AppView: View {
           Label("Comparer", systemImage: "doc.text.magnifyingglass")
         }
         .tag(AppFeature.Tab.compare)
+      
+      AnalysisView(store: store.scope(state: \.analysis, action: \.analysis))
+        .tabItem {
+          Label("Analyser", systemImage: "chart.bar.doc.horizontal")
+        }
+        .tag(AppFeature.Tab.analysis)
     }
     .frame(minWidth: 800, minHeight: 600)
   }

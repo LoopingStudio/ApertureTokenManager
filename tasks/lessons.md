@@ -397,6 +397,66 @@ enum GroupNames { static let utility = "utility" }
 
 ---
 
+## Token Usage Analysis
+
+### Architecture de l'analyse
+L'analyse d'utilisation suit le pattern standard :
+```
+AnalysisFeature
+    ↓ (startAnalysisTapped)
+UsageClient.analyzeUsage()
+    ↓
+UsageService (actor)
+    ↓ (utilise)
+TokenUsageHelpers (static methods)
+    ↓
+TokenUsageReport → affiché dans les vues
+```
+
+### Patterns de recherche
+Pour détecter les usages de tokens dans les fichiers Swift :
+```swift
+enum UsagePattern {
+  // .tokenName (shorthand)
+  static let dotPrefix = #"\.([a-z][a-zA-Z0-9]*)"#
+
+  // Color.tokenName ou Aperture.Foundations.Color.tokenName
+  static let fullyQualified = #"(?:Aperture\.Foundations\.)?Color\.([a-z][a-zA-Z0-9]*)"#
+
+  // theme.color(.tokenName)
+  static let themeColor = #"\.color\(\s*\.([a-z][a-zA-Z0-9]*)\s*\)"#
+}
+```
+
+### Conversion nom → enumCase
+Les tokens exportés utilisent camelCase :
+```swift
+// "bg-brand-solid" → "bgBrandSolid"
+static func tokenNameToEnumCase(_ name: String) -> String {
+  let cleanName = name
+    .replacingOccurrences(of: "-", with: " ")
+    .replacingOccurrences(of: "_", with: " ")
+
+  let components = cleanName.split(separator: " ")
+  let firstComponent = String(components[0]).lowercased()
+  let otherComponents = components.dropFirst().map { String($0).capitalized }
+
+  return firstComponent + otherComponents.joined()
+}
+```
+
+### Filtering des fichiers
+Ignorer les dossiers non pertinents lors du scan :
+```swift
+let ignoredDirs = ["DerivedData", ".build", "Pods", "Carthage", ".xcodeproj", ".xcworkspace"]
+```
+
+Options de config :
+- `ignoreTestFiles` - Fichiers contenant "test" ou "spec"
+- `ignorePreviewFiles` - Fichiers contenant "preview"
+
+---
+
 ## Notes pour le futur
 
 ### Localisation

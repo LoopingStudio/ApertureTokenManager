@@ -8,6 +8,7 @@ struct AppFeature {
     case dashboard
     case importer
     case compare
+    case analysis
   }
   
   @ObservableState
@@ -16,24 +17,29 @@ struct AppFeature {
     var dashboard: DashboardFeature.State = .initial
     var token: TokenFeature.State = .initial
     var compare: CompareFeature.State = .initial
+    var analysis: AnalysisFeature.State = .initial
   }
   
   enum Action {
     case tabSelected(Tab)
+    case analysis(AnalysisFeature.Action)
+    case compare(CompareFeature.Action)
     case dashboard(DashboardFeature.Action)
     case token(TokenFeature.Action)
-    case compare(CompareFeature.Action)
   }
   
   var body: some ReducerOf<Self> {
+    Scope(state: \.analysis, action: \.analysis) {
+      AnalysisFeature()
+    }
+    Scope(state: \.compare, action: \.compare) {
+      CompareFeature()
+    }
     Scope(state: \.dashboard, action: \.dashboard) {
       DashboardFeature()
     }
     Scope(state: \.token, action: \.token) {
       TokenFeature()
-    }
-    Scope(state: \.compare, action: \.compare) {
-      CompareFeature()
     }
     
     Reduce { state, action in
@@ -56,6 +62,10 @@ struct AppFeature {
         return .none
         
       case .token:
+        return .none
+        
+      // MARK: - Analysis Actions
+      case .analysis:
         return .none
         
       // MARK: - Compare Actions

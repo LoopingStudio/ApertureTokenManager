@@ -18,6 +18,24 @@
 
 ---
 
+### [2026-02-06] Feature: Token Usage Analysis
+
+- [x] Créer `TokenUsageHelpers.swift` - Parsing Swift et regex pour détecter les usages
+- [x] Créer `UsageAnalysis.swift` model - TokenUsageReport, UsedToken, OrphanedToken
+- [x] Créer `UsageService` (actor) et `UsageClient`
+- [x] Créer `AnalysisFeature` - TCA reducer avec State/Actions
+- [x] Créer `AnalysisFeature+ViewActions.swift` et `AnalysisFeature+InternalActions.swift`
+- [x] Créer `AnalysisFeature+View.swift` - UI de configuration avec sélection de dossiers
+- [x] Créer `UsageOverviewView.swift` - Vue d'ensemble avec statistiques
+- [x] Créer `UsedTokensListView.swift` - Liste des tokens utilisés avec détails
+- [x] Créer `OrphanedTokensListView.swift` - Liste des tokens orphelins par catégorie
+- [x] Intégrer dans `AppFeature` - Nouvel onglet "Analyser"
+- [x] Build et vérification
+
+**Résultat**: Nouvel onglet "Analyser" permettant de scanner des projets Swift pour détecter l'utilisation des tokens. Affiche les tokens utilisés avec leurs occurrences (fichier, ligne, contexte) et les tokens orphelins groupés par catégorie.
+
+---
+
 ## En cours
 
 _Aucune tâche en cours_
