@@ -1,6 +1,7 @@
 import SwiftUI
 import ComposableArchitecture
 
+@ViewAction(for: TokenBrowserFeature.self)
 struct TokenBrowserView: View {
   let store: StoreOf<TokenBrowserFeature>
   @Environment(\.dismiss) private var dismiss
@@ -71,10 +72,8 @@ struct TokenBrowserView: View {
           node: node,
           selectedNodeId: store.selectedNode?.id,
           expandedNodes: store.expandedNodes,
-          onSelect: { store.send(.view(.selectNode($0))) },
-          onExpand: { id in
-            store.send(.view(.toggleNode(id)))
-          }
+          onSelect: { send(.selectNode($0)) },
+          onExpand: { send(.toggleNode($0)) }
         )
       }
     }

@@ -2,7 +2,9 @@ import ComposableArchitecture
 import Foundation
 
 @Reducer
-struct TokenBrowserFeature {
+struct TokenBrowserFeature: Sendable {
+  
+  // MARK: - State
   
   @ObservableState
   struct State: Equatable {
@@ -11,54 +13,35 @@ struct TokenBrowserFeature {
     var selectedNode: TokenNode?
     var expandedNodes: Set<TokenNode.ID> = []
     
-    var tokenCount: Int {
-      TokenHelpers.countLeafTokens(tokens)
+    var tokenCount: Int { TokenHelpers.countLeafTokens(tokens) }
+
+    static func initial(tokens: [TokenNode], metadata: TokenMetadata) -> Self {
+      .init(tokens: tokens, metadata: metadata, selectedNode: nil, expandedNodes: [])
     }
   }
   
+  // MARK: - Action
+  
   @CasePathable
-  enum Action {
-    case view(ViewAction)
+  enum Action: ViewAction, Equatable, Sendable {
+    case view(View)
     
     @CasePathable
-    enum ViewAction {
-      case selectNode(TokenNode)
-      case expandNode(TokenNode.ID)
+    enum View: Equatable, Sendable {
       case collapseNode(TokenNode.ID)
+      case expandNode(TokenNode.ID)
+      case selectNode(TokenNode)
       case toggleNode(TokenNode.ID)
     }
   }
   
+  // MARK: - Body
+  
   var body: some ReducerOf<Self> {
     Reduce { state, action in
       switch action {
-      case .view(let viewAction):
-        return handleViewAction(viewAction, state: &state)
+      case .view(let action): handleViewAction(action, state: &state)
       }
-    }
-  }
-  
-  private func handleViewAction(_ action: Action.ViewAction, state: inout State) -> Effect<Action> {
-    switch action {
-    case .selectNode(let node):
-      state.selectedNode = node
-      return .none
-      
-    case .expandNode(let id):
-      state.expandedNodes.insert(id)
-      return .none
-      
-    case .collapseNode(let id):
-      state.expandedNodes.remove(id)
-      return .none
-      
-    case .toggleNode(let id):
-      if state.expandedNodes.contains(id) {
-        state.expandedNodes.remove(id)
-      } else {
-        state.expandedNodes.insert(id)
-      }
-      return .none
     }
   }
 }

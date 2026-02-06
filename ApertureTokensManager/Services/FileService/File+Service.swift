@@ -99,4 +99,12 @@ actor FileService {
     
     return selectedURL
   }
+  
+  // MARK: - Finder Operations
+  @MainActor
+  func openInFinder(url: URL) {
+    _ = url.startAccessingSecurityScopedResource()
+    defer { url.stopAccessingSecurityScopedResource() }
+    NSWorkspace.shared.activateFileViewerSelecting([url])
+  }
 }

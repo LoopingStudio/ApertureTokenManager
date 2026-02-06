@@ -1,6 +1,7 @@
 import SwiftUI
 import ComposableArchitecture
 
+@ViewAction(for: DashboardFeature.self)
 struct DashboardView: View {
   @Bindable var store: StoreOf<DashboardFeature>
   
@@ -35,11 +36,11 @@ private extension DashboardView {
       
       if store.designSystemBase != nil {
         Menu {
-          Button(action: { store.send(.view(.openFileButtonTapped)) }) {
+          Button(action: { send(.openFileButtonTapped) }) {
             Label("Afficher dans le Finder", systemImage: "folder")
           }
           Divider()
-          Button(role: .destructive, action: { store.send(.view(.clearBaseButtonTapped)) }) {
+          Button(role: .destructive, action: { send(.clearBaseButtonTapped) }) {
             Label("Supprimer la base", systemImage: "trash")
           }
         } label: {
