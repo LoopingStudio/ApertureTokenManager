@@ -5,15 +5,21 @@ import ComposableArchitecture
 struct DashboardView: View {
   @Bindable var store: StoreOf<DashboardFeature>
   
+  @State private var showHeader = false
+  @State private var showStats = false
+  @State private var showActions = false
+  @State private var showEmptyContent = false
+  @State private var iconPulse = false
+  
   var body: some View {
     VStack(spacing: 0) {
       header
       Divider()
       
       if let base = store.designSystemBase {
-        DesignSystemBaseView(base: base, store: store)
+        designSystemBaseContent(base)
       } else {
-        EmptyBaseView { send(.goToImportTapped) }
+        emptyBaseContent
       }
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -21,12 +27,11 @@ struct DashboardView: View {
       TokenBrowserView(store: browserStore)
     }
   }
-}
-
-// MARK: - Header
-
-private extension DashboardView {
-  var header: some View {
+  
+  // MARK: - Header
+  
+  @ViewBuilder
+  private var header: some View {
     HStack {
       Text("Dashboard")
         .font(.title)
@@ -55,16 +60,11 @@ private extension DashboardView {
     }
     .padding()
   }
-}
-
-// MARK: - Empty State View
-
-private struct EmptyBaseView: View {
-  @State private var showContent = false
-  @State private var iconPulse = false
-  let onImportTapped: () -> Void
-
-  var body: some View {
+  
+  // MARK: - Empty State
+  
+  @ViewBuilder
+  private var emptyBaseContent: some View {
     VStack(spacing: UIConstants.Spacing.large) {
       ZStack {
         Circle()
@@ -76,8 +76,8 @@ private struct EmptyBaseView: View {
           .font(.system(size: 48))
           .foregroundStyle(.purple.opacity(0.6))
       }
-      .opacity(showContent ? 1 : 0)
-      .scaleEffect(showContent ? 1 : 0.8)
+      .opacity(showEmptyContent ? 1 : 0)
+      .scaleEffect(showEmptyContent ? 1 : 0.8)
       
       VStack(spacing: UIConstants.Spacing.small) {
         Text("Aucun Design System défini")
@@ -89,11 +89,11 @@ private struct EmptyBaseView: View {
           .foregroundStyle(.secondary)
           .multilineTextAlignment(.center)
       }
-      .opacity(showContent ? 1 : 0)
-      .offset(y: showContent ? 0 : 10)
-
+      .opacity(showEmptyContent ? 1 : 0)
+      .offset(y: showEmptyContent ? 0 : 10)
+      
       Button {
-        onImportTapped()
+        send(.goToImportTapped)
       } label: {
         HStack(spacing: 6) {
           Image(systemName: "arrow.right.circle.fill")
@@ -108,8 +108,8 @@ private struct EmptyBaseView: View {
           Capsule()
             .fill(Color.purple.opacity(0.1))
         )
-        .opacity(showContent ? 1 : 0)
-        .offset(y: showContent ? 0 : 15)
+        .opacity(showEmptyContent ? 1 : 0)
+        .offset(y: showEmptyContent ? 0 : 15)
       }
       .buttonStyle(.plain)
     }
@@ -117,33 +117,25 @@ private struct EmptyBaseView: View {
     .frame(maxHeight: .infinity)
     .onAppear {
       withAnimation(.easeOut(duration: 0.5)) {
-        showContent = true
+        showEmptyContent = true
       }
       withAnimation(.easeInOut(duration: 2).repeatForever(autoreverses: true)) {
         iconPulse = true
       }
     }
   }
-}
-
-// MARK: - Design System Base View
-
-private struct DesignSystemBaseView: View {
-  let base: DesignSystemBase
-  let store: StoreOf<DashboardFeature>
   
-  @State private var showHeader = false
-  @State private var showStats = false
-  @State private var showActions = false
+  // MARK: - Design System Base Content
   
-  var body: some View {
+  @ViewBuilder
+  private func designSystemBaseContent(_ base: DesignSystemBase) -> some View {
     ScrollView {
       VStack(spacing: UIConstants.Spacing.large) {
-        headerCard
+        headerCard(base)
           .opacity(showHeader ? 1 : 0)
           .offset(y: showHeader ? 0 : -15)
         
-        statsSection
+        statsSection(base)
           .opacity(showStats ? 1 : 0)
           .offset(y: showStats ? 0 : 15)
         
@@ -168,11 +160,9 @@ private struct DesignSystemBaseView: View {
     }
   }
   
-  // MARK: - Header Card
-  
-  private var headerCard: some View {
+  @ViewBuilder
+  private func headerCard(_ base: DesignSystemBase) -> some View {
     HStack(spacing: UIConstants.Spacing.medium) {
-      // Icon
       ZStack {
         Circle()
           .fill(Color.green.opacity(0.15))
@@ -183,7 +173,6 @@ private struct DesignSystemBaseView: View {
           .foregroundStyle(.green)
       }
       
-      // Info
       VStack(alignment: .leading, spacing: 4) {
         HStack(spacing: 8) {
           Text("Design System Actif")
@@ -223,9 +212,8 @@ private struct DesignSystemBaseView: View {
     )
   }
   
-  // MARK: - Stats Section
-  
-  private var statsSection: some View {
+  @ViewBuilder
+  private func statsSection(_ base: DesignSystemBase) -> some View {
     HStack(spacing: UIConstants.Spacing.medium) {
       StatCard(
         title: "Tokens",
@@ -233,7 +221,7 @@ private struct DesignSystemBaseView: View {
         subtitle: "dans le design system",
         color: .blue,
         icon: "paintpalette.fill",
-        action: { store.send(.view(.tokenCountTapped)) }
+        action: { send(.tokenCountTapped) }
       )
       .staggeredAppear(index: 0)
       
@@ -257,8 +245,7 @@ private struct DesignSystemBaseView: View {
     }
   }
   
-  // MARK: - Actions Section
-  
+  @ViewBuilder
   private var actionsSection: some View {
     VStack(alignment: .leading, spacing: UIConstants.Spacing.medium) {
       Text("Actions rapides")
@@ -267,128 +254,46 @@ private struct DesignSystemBaseView: View {
       
       HStack(spacing: UIConstants.Spacing.medium) {
         ExportActionCard(store: store)
+          .staggeredAppear(index: 0, duration: 0.4)
         
-        DashboardActionCard(
+        ActionCard(
           title: "Comparer avec import",
           subtitle: "Détecter les changements",
           icon: "doc.text.magnifyingglass",
-          color: .green,
-          index: 1
+          color: .green
         ) {
-          store.send(.view(.compareWithBaseButtonTapped))
+          send(.compareWithBaseButtonTapped)
         }
+        .staggeredAppear(index: 1, baseDelay: 0.1, duration: 0.4)
       }
     }
   }
 }
+
+
 
 // MARK: - Export Action Card with Popover
 
 private struct ExportActionCard: View {
   @Bindable var store: StoreOf<DashboardFeature>
   
-  @State private var isHovering = false
-  @State private var isPressed = false
-  @State private var iconBounce = false
-  
-  private let color: Color = .blue
-  
   var body: some View {
-    Button(action: { handleButtonTapped() }) {
-      cardContent
-    }
-    .buttonStyle(.plain)
-    .scaleEffect(isPressed ? 0.97 : (isHovering ? 1.01 : 1.0))
-    .shadow(color: isHovering ? color.opacity(0.12) : .clear, radius: 6)
-    .animation(.easeOut(duration: 0.2), value: isHovering)
-    .animation(.spring(response: 0.2, dampingFraction: 0.6), value: isPressed)
-    .pointerOnHover { hovering in handleHover(hovering) }
-    .staggeredAppear(index: 0, duration: 0.4)
-    .popover(isPresented: $store.isExportPopoverPresented) {
-      ExportPopoverContent(store: store)
-    }
-  }
-  
-  private var cardContent: some View {
-    HStack(spacing: UIConstants.Spacing.medium) {
-      ZStack {
-        Circle()
-          .fill(color.opacity(0.15))
-          .frame(width: 44, height: 44)
-        
-        Image(systemName: "square.and.arrow.up.fill")
-          .font(.title3)
-          .foregroundStyle(color)
-          .scaleEffect(iconBounce ? 1.15 : 1.0)
-      }
-      
-      VStack(alignment: .leading, spacing: 2) {
-        Text("Exporter vers Xcode")
-          .font(.headline)
-          .foregroundStyle(.primary)
-        Text("Générer XCAssets + Swift")
-          .font(.caption)
-          .foregroundStyle(.secondary)
-      }
-      
-      Spacer()
-      
-      Image(systemName: "chevron.right")
-        .font(.caption)
-        .foregroundStyle(.tertiary)
-        .offset(x: isHovering ? 3 : 0)
-        .animation(.easeOut(duration: 0.2), value: isHovering)
-    }
-    .padding(UIConstants.Spacing.medium)
-    .frame(maxWidth: .infinity, alignment: .leading)
-    .background(
-      RoundedRectangle(cornerRadius: UIConstants.CornerRadius.medium)
-        .fill(color.opacity(isHovering ? 0.12 : 0.06))
-        .overlay(
-          RoundedRectangle(cornerRadius: UIConstants.CornerRadius.medium)
-            .stroke(color.opacity(isHovering ? 0.3 : 0.15), lineWidth: 1)
-        )
-    )
-  }
-  
-  private func handleButtonTapped() {
-    withAnimation(.spring(response: 0.1, dampingFraction: 0.6)) {
-      isPressed = true
-    }
-    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-      withAnimation(.spring(response: 0.2, dampingFraction: 0.6)) {
-        isPressed = false
-      }
+    ActionCard(
+      title: "Exporter vers Xcode",
+      subtitle: "Générer XCAssets + Swift",
+      icon: "square.and.arrow.up.fill",
+      color: .blue
+    ) {
       store.send(.view(.exportButtonTapped))
     }
-  }
-  
-  private func handleHover(_ hovering: Bool) {
-    isHovering = hovering
-    guard hovering else { return }
-    bounceIcon()
-  }
-  
-  private func bounceIcon() {
-    withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) {
-      iconBounce = true
-    }
-    DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-      withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
-        iconBounce = false
-      }
+    .popover(isPresented: $store.isExportPopoverPresented) {
+      exportPopoverContent
     }
   }
-}
-
-// MARK: - Export Popover Content
-
-private struct ExportPopoverContent: View {
-  @Bindable var store: StoreOf<DashboardFeature>
   
-  var body: some View {
+  @ViewBuilder
+  private var exportPopoverContent: some View {
     VStack(alignment: .leading, spacing: UIConstants.Spacing.medium) {
-      // Header
       HStack {
         Image(systemName: "gearshape.fill")
           .foregroundStyle(.blue)
@@ -398,7 +303,6 @@ private struct ExportPopoverContent: View {
       
       Divider()
       
-      // Filters
       VStack(alignment: .leading, spacing: UIConstants.Spacing.small) {
         Toggle(isOn: $store.filters.excludeTokensStartingWithHash) {
           HStack {
@@ -434,7 +338,6 @@ private struct ExportPopoverContent: View {
       
       Divider()
       
-      // Actions
       HStack {
         Button("Annuler") {
           store.send(.view(.dismissExportPopover))
@@ -456,104 +359,7 @@ private struct ExportPopoverContent: View {
   }
 }
 
-// MARK: - Action Card
 
-private struct DashboardActionCard: View {
-  let title: String
-  let subtitle: String
-  let icon: String
-  let color: Color
-  let index: Int
-  let action: () -> Void
-  
-  @State private var isHovering = false
-  @State private var isPressed = false
-  @State private var iconBounce = false
-  
-  var body: some View {
-    Button(action: { handleButtonTapped() }) {
-      cardContent
-    }
-    .buttonStyle(.plain)
-    .scaleEffect(isPressed ? 0.97 : (isHovering ? 1.01 : 1.0))
-    .shadow(color: isHovering ? color.opacity(0.12) : .clear, radius: 6)
-    .animation(.easeOut(duration: 0.2), value: isHovering)
-    .animation(.spring(response: 0.2, dampingFraction: 0.6), value: isPressed)
-    .pointerOnHover { hovering in handleHover(hovering) }
-    .staggeredAppear(index: index, baseDelay: 0.1, duration: 0.4)
-  }
-  
-  private var cardContent: some View {
-    HStack(spacing: UIConstants.Spacing.medium) {
-      ZStack {
-        Circle()
-          .fill(color.opacity(0.15))
-          .frame(width: 44, height: 44)
-        
-        Image(systemName: icon)
-          .font(.title3)
-          .foregroundStyle(color)
-          .scaleEffect(iconBounce ? 1.15 : 1.0)
-      }
-      
-      VStack(alignment: .leading, spacing: 2) {
-        Text(title)
-          .font(.headline)
-          .foregroundStyle(.primary)
-        Text(subtitle)
-          .font(.caption)
-          .foregroundStyle(.secondary)
-      }
-      
-      Spacer()
-      
-      Image(systemName: "chevron.right")
-        .font(.caption)
-        .foregroundStyle(.tertiary)
-        .offset(x: isHovering ? 3 : 0)
-        .animation(.easeOut(duration: 0.2), value: isHovering)
-    }
-    .padding(UIConstants.Spacing.medium)
-    .frame(maxWidth: .infinity, alignment: .leading)
-    .background(
-      RoundedRectangle(cornerRadius: UIConstants.CornerRadius.medium)
-        .fill(color.opacity(isHovering ? 0.12 : 0.06))
-        .overlay(
-          RoundedRectangle(cornerRadius: UIConstants.CornerRadius.medium)
-            .stroke(color.opacity(isHovering ? 0.3 : 0.15), lineWidth: 1)
-        )
-    )
-  }
-  
-  private func handleButtonTapped() {
-    withAnimation(.spring(response: 0.1, dampingFraction: 0.6)) {
-      isPressed = true
-    }
-    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-      withAnimation(.spring(response: 0.2, dampingFraction: 0.6)) {
-        isPressed = false
-      }
-      action()
-    }
-  }
-  
-  private func handleHover(_ hovering: Bool) {
-    isHovering = hovering
-    guard hovering else { return }
-    bounceIcon()
-  }
-  
-  private func bounceIcon() {
-    withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) {
-      iconBounce = true
-    }
-    DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-      withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
-        iconBounce = false
-      }
-    }
-  }
-}
 
 // MARK: - Previews
 
