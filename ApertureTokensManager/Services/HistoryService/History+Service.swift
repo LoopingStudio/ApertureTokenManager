@@ -2,10 +2,11 @@ import Foundation
 import Sharing
 
 actor HistoryService {
-  private static let maxEntries = 10
-  
+  @Shared(.appSettings) private var appSettings
   @Shared(.importHistory) private var importHistory
   @Shared(.comparisonHistory) private var comparisonHistory
+  
+  private var maxEntries: Int { appSettings.maxHistoryEntries }
   
   // MARK: - Import History
   
@@ -14,11 +15,12 @@ actor HistoryService {
   }
   
   func addImportEntry(_ entry: ImportHistoryEntry) {
+    let max = maxEntries
     $importHistory.withLock { history in
       history.removeAll { $0.fileName == entry.fileName }
       history.insert(entry, at: 0)
-      if history.count > Self.maxEntries {
-        history = Array(history.prefix(Self.maxEntries))
+      if history.count > max {
+        history = Array(history.prefix(max))
       }
     }
   }
@@ -38,14 +40,15 @@ actor HistoryService {
   }
   
   func addComparisonEntry(_ entry: ComparisonHistoryEntry) {
+    let max = maxEntries
     $comparisonHistory.withLock { history in
       history.removeAll {
         $0.oldFile.fileName == entry.oldFile.fileName &&
         $0.newFile.fileName == entry.newFile.fileName
       }
       history.insert(entry, at: 0)
-      if history.count > Self.maxEntries {
-        history = Array(history.prefix(Self.maxEntries))
+      if history.count > max {
+        history = Array(history.prefix(max))
       }
     }
   }

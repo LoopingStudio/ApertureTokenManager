@@ -101,3 +101,23 @@ extension SharedKey where Self == FileStorageKey<[ScanDirectory]>.Default {
     Self[.fileStorage(.analysisDirectories), default: []]
   }
 }
+
+// MARK: - App Settings
+
+public struct AppSettings: Equatable, Sendable, Codable {
+  public var maxHistoryEntries: Int = 10
+  
+  public init(maxHistoryEntries: Int = 10) {
+    self.maxHistoryEntries = maxHistoryEntries
+  }
+}
+
+extension URL {
+  static let appSettings = Self.documentsDirectory.appending(component: "app-settings.json")
+}
+
+extension SharedKey where Self == FileStorageKey<AppSettings>.Default {
+  static var appSettings: Self {
+    Self[.fileStorage(.appSettings), default: AppSettings()]
+  }
+}

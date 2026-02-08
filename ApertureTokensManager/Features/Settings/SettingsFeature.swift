@@ -1,6 +1,7 @@
 import AppKit
 import ComposableArchitecture
 import Foundation
+import Sharing
 
 @Reducer
 struct SettingsFeature: Sendable {
@@ -11,6 +12,14 @@ struct SettingsFeature: Sendable {
 
   @ObservableState
   struct State: Equatable {
+    // Shared settings
+    @Shared(.tokenFilters) var tokenFilters: TokenFilters
+    @Shared(.appSettings) var appSettings: AppSettings
+    @Shared(.importHistory) var importHistory: [ImportHistoryEntry]
+    @Shared(.comparisonHistory) var comparisonHistory: [ComparisonHistoryEntry]
+    @Shared(.designSystemBase) var designSystemBase: DesignSystemBase?
+    @Shared(.analysisDirectories) var analysisDirectories: [ScanDirectory]
+    
     // Logs
     var logEntries: [LogEntry] = []
     var logCount: Int = 0
@@ -18,7 +27,8 @@ struct SettingsFeature: Sendable {
     var isExportingLogs: Bool = false
     
     // UI
-    var selectedSection: SettingsSection = .logs
+    var selectedSection: SettingsSection = .export
+    var showResetConfirmation: Bool = false
     
     static var initial: State { .init() }
   }
@@ -26,6 +36,9 @@ struct SettingsFeature: Sendable {
   // MARK: - Settings Sections
   
   enum SettingsSection: String, CaseIterable, Equatable, Sendable {
+    case export = "Export"
+    case history = "Historique"
+    case data = "Données"
     case logs = "Logs"
     case about = "À propos"
   }
@@ -47,9 +60,13 @@ struct SettingsFeature: Sendable {
     @CasePathable
     enum View: Equatable, Sendable {
       case clearLogsButtonTapped
+      case confirmResetAllData
+      case dismissResetConfirmation
       case exportLogsButtonTapped
       case onAppear
+      case openDataFolderButtonTapped
       case refreshLogsButtonTapped
+      case resetAllDataButtonTapped
       case sectionSelected(SettingsSection)
     }
   }

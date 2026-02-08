@@ -11,6 +11,26 @@ extension SettingsFeature {
         await send(.internal(.logEntriesLoaded(entries)))
       }
       
+    case .confirmResetAllData:
+      state.showResetConfirmation = false
+      // Reset all shared data
+      state.$tokenFilters.withLock { $0 = TokenFilters() }
+      state.$appSettings.withLock { $0 = AppSettings() }
+      state.$importHistory.withLock { $0 = [] }
+      state.$comparisonHistory.withLock { $0 = [] }
+      state.$designSystemBase.withLock { $0 = nil }
+      state.$analysisDirectories.withLock { $0 = [] }
+      loggingClient.logSystemEvent(LogFeature.app, "all_data_reset", [:])
+      return .run { send in
+        await loggingClient.clearBuffer()
+        let entries = await loggingClient.getLogEntries()
+        await send(.internal(.logEntriesLoaded(entries)))
+      }
+      
+    case .dismissResetConfirmation:
+      state.showResetConfirmation = false
+      return .none
+      
     case .exportLogsButtonTapped:
       state.isExportingLogs = true
       return .run { send in
@@ -25,12 +45,22 @@ extension SettingsFeature {
         await send(.internal(.logEntriesLoaded(entries)))
       }
       
+    case .openDataFolderButtonTapped:
+      return .run { [fileClient] _ in
+        let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        await fileClient.openInFinder(documentsURL)
+      }
+      
     case .refreshLogsButtonTapped:
       state.isLoadingLogs = true
       return .run { send in
         let entries = await loggingClient.getLogEntries()
         await send(.internal(.logEntriesLoaded(entries)))
       }
+      
+    case .resetAllDataButtonTapped:
+      state.showResetConfirmation = true
+      return .none
       
     case .sectionSelected(let section):
       state.selectedSection = section

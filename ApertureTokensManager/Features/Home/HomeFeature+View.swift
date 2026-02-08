@@ -241,7 +241,7 @@ struct HomeView: View {
       
       StatCard(
         title: "Défini le",
-        value: base.setAt.formatted(date: .abbreviated, time: .omitted),
+        value: base.setAt.shortFormatted,
         subtitle: "comme base de référence",
         color: .orange,
         icon: "calendar"
@@ -249,7 +249,7 @@ struct HomeView: View {
       .staggeredAppear(index: 1)
       
       StatCard(
-        title: "Exporté",
+        title: "Exporté le",
         value: base.metadata.exportedAt.toShortDate(),
         subtitle: "par \(base.metadata.generator)",
         color: .purple,

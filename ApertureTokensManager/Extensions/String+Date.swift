@@ -1,5 +1,28 @@
 import Foundation
 
+// MARK: - Date Extension
+
+extension Date {
+  /// Formats date to short French format (dd/MM/yy)
+  var shortFormatted: String {
+    let formatter = DateFormatter()
+    formatter.locale = Locale(identifier: "fr_FR")
+    formatter.dateFormat = "dd/MM/yy"
+    return formatter.string(from: self)
+  }
+  
+  /// Formats date to medium French format (8 févr. 2026)
+  var mediumFormatted: String {
+    let formatter = DateFormatter()
+    formatter.locale = Locale(identifier: "fr_FR")
+    formatter.dateStyle = .medium
+    formatter.timeStyle = .none
+    return formatter.string(from: self)
+  }
+}
+
+// MARK: - String Extension
+
 extension String {
   /// Parses the string using common date formats and returns a Date if successful
   private func parseDate() -> Date? {
