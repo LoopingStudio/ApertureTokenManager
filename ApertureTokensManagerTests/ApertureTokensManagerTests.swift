@@ -1,10 +1,14 @@
 import Foundation
 import Testing
 
+@testable import ApertureTokensManager
+
 @Suite("Parsing Tests")
-struct ApertureTokensManagerTests {
-  @Test("Test New JSON Structure Parsing")
-  func testNewJSONStructureParsing() {
+struct ParsingTests {
+  
+  @Test("Parse JSON with new structure")
+  func parseNewJSONStructure() throws {
+    // Arrange
     let sampleJSON = """
         {
           "metadata": {
@@ -45,40 +49,84 @@ struct ApertureTokensManagerTests {
         }
         """.data(using: .utf8)!
 
-    do {
-      let tokenExport = try JSONDecoder().decode(TokenExport.self, from: sampleJSON)
+    // Act
+    let tokenExport = try JSONDecoder().decode(TokenExport.self, from: sampleJSON)
 
-      // Vérifier les métadonnées
-      assert(tokenExport.metadata.version == "1.0.0")
-      assert(tokenExport.metadata.generator == "Aperture Exporter")
+    // Assert - Metadata
+    #expect(tokenExport.metadata.version == "1.0.0")
+    #expect(tokenExport.metadata.generator == "Aperture Exporter")
 
-      // Vérifier le token
-      let token = tokenExport.tokens.first!
-      assert(token.name == "bg-error-solid")
-      assert(token.type == .token)
-      assert(token.path == "Colors/Background/bg-error-solid")
+    // Assert - Token
+    let token = try #require(tokenExport.tokens.first)
+    #expect(token.name == "bg-error-solid")
+    #expect(token.type == .token)
+    #expect(token.path == "Colors/Background/bg-error-solid")
 
-      // Vérifier les modes
-      let modes = token.modes!
-      let legacy = modes.legacy!
-      let newBrand = modes.newBrand!
+    // Assert - Modes
+    let modes = try #require(token.modes)
+    let legacy = try #require(modes.legacy)
+    let newBrand = try #require(modes.newBrand)
 
-      // Vérifier Legacy
-      assert(legacy.light?.hex == "#DC2626")
-      assert(legacy.light?.primitiveName == "UI Colors/Red/600")
-      assert(legacy.dark?.hex == "#DC2626")
-      assert(legacy.dark?.primitiveName == "UI Colors/Red/600")
+    // Assert - Legacy
+    #expect(legacy.light?.hex == "#DC2626")
+    #expect(legacy.light?.primitiveName == "UI Colors/Red/600")
+    #expect(legacy.dark?.hex == "#DC2626")
+    #expect(legacy.dark?.primitiveName == "UI Colors/Red/600")
 
-      // Vérifier New Brand
-      assert(newBrand.light?.hex == "#EF4444")
-      assert(newBrand.light?.primitiveName == "UI Colors/Red/500")
-      assert(newBrand.dark?.hex == "#EF4444")
-      assert(newBrand.dark?.primitiveName == "UI Colors/Red/500")
+    // Assert - New Brand
+    #expect(newBrand.light?.hex == "#EF4444")
+    #expect(newBrand.light?.primitiveName == "UI Colors/Red/500")
+    #expect(newBrand.dark?.hex == "#EF4444")
+    #expect(newBrand.dark?.primitiveName == "UI Colors/Red/500")
+  }
+  
+  @Test("Parse JSON with group structure")
+  func parseGroupStructure() throws {
+    // Arrange
+    let sampleJSON = """
+        {
+          "metadata": {
+            "exportedAt": "2026-02-04T11:52:41.422Z",
+            "timestamp": 1770205961422,
+            "version": "1.0.0",
+            "generator": "Aperture Exporter"
+          },
+          "tokens": [
+            {
+              "name": "Background",
+              "type": "group",
+              "path": "Colors/Background",
+              "children": [
+                {
+                  "name": "bg-primary",
+                  "type": "token",
+                  "path": "Colors/Background/bg-primary",
+                  "modes": {
+                    "Legacy": {
+                      "light": { "hex": "#FFFFFF" },
+                      "dark": { "hex": "#000000" }
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+        """.data(using: .utf8)!
 
-      print("✅ Test de parsing réussi - La nouvelle structure JSON est correctement supportée!")
+    // Act
+    let tokenExport = try JSONDecoder().decode(TokenExport.self, from: sampleJSON)
 
-    } catch {
-      print("❌ Erreur de parsing: \\(error)")
-    }
+    // Assert
+    let group = try #require(tokenExport.tokens.first)
+    #expect(group.type == .group)
+    #expect(group.name == "Background")
+    
+    let children = try #require(group.children)
+    #expect(children.count == 1)
+    
+    let childToken = try #require(children.first)
+    #expect(childToken.name == "bg-primary")
+    #expect(childToken.type == .token)
   }
 }

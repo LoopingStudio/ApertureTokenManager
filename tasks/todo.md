@@ -91,6 +91,47 @@
 
 ---
 
+### [2026-02-08] Feature: Historique unifié dans Accueil
+
+- [x] Créer `UnifiedHistoryItem` enum dans `HistoryEntry.swift`
+- [x] Créer `UnifiedHistoryView.swift` composant avec filtre (Tout/Imports/Comparaisons)
+- [x] Ajouter `@Shared` histories dans `HomeFeature.State`
+- [x] Ajouter computed property `unifiedHistory` avec merge et tri par date
+- [x] Ajouter actions `historyFilterChanged` et `historyItemTapped`
+- [x] Intégrer dans `HomeFeature+View.swift`
+- [x] Ajouter delegate actions pour navigation vers Import/Compare
+- [x] Créer actions internes `loadFromHistoryEntry` dans Import et Compare
+- [x] Gérer navigation dans `AppFeature`
+- [x] Build et vérification
+
+**Résultat**: Section "Activité récente" dans l'accueil avec timeline unifiée des imports et comparaisons. Clic sur un item ouvre la feature correspondante et charge le fichier.
+
+---
+
+### [2026-02-08] Qualité: Tests unitaires avec Swift Testing
+
+- [x] Corriger test existant (`assert` → `#expect`)
+- [x] Créer `FuzzyMatchingHelpersTests.swift` (24 tests)
+- [x] Créer `TokenUsageHelpersTests.swift` (18 tests)
+- [x] Créer `SuggestionServiceTests.swift` (9 tests)
+- [x] Créer `TokenHelpersTests.swift` (17 tests)
+- [x] Créer `ComparisonServiceTests.swift` (11 tests)
+- [x] Build et exécution - 81 tests passent
+
+**Résultat**: Suite de tests complète couvrant les Helpers (FuzzyMatching, TokenUsage, Token) et Services (Suggestion, Comparison). Utilise le framework Swift Testing avec `@Suite`, `@Test`, `#expect`, `#require`.
+
+---
+
+### [2026-02-08] Refactoring: TCA conventions
+
+- [x] Remplacer `.run { send in await send() }` par `.concatenate()` dans `ImportFeature+InternalActions`
+- [x] Créer actions `internal.loadFromHistoryEntry` pour Import et Compare
+- [x] View actions délèguent vers internal actions (évite duplication)
+
+**Résultat**: Meilleure conformité aux conventions TCA - view actions = user interactions, internal actions = async results et cross-feature.
+
+---
+
 ## En cours
 
 _Aucune tâche en cours_
@@ -134,12 +175,7 @@ _Aucune tâche en cours_
    - Clic sur la notification → ouvrir l'app sur l'onglet concerné
    - Utile quand l'app est en arrière-plan pendant un export long
 
-9. **Historique unifié dans Accueil**
-   - Section "Activité récente" dans HomeView
-   - Timeline combinant imports, comparaisons, exports, analyses
-   - Chaque entrée : icône + action + date + détails
-   - Filtres : "Tout", "Imports", "Comparaisons", "Exports"
-   - Permet de voir rapidement ce qu'on a fait récemment
+9. ~~**Historique unifié dans Accueil**~~ ✅ _Fait le 2026-02-08_
 
 ---
 
@@ -191,9 +227,11 @@ _Aucune tâche en cours_
 
 ### 🏗️ Architecture & Qualité
 
-16. **Tests unitaires**
-    - Tests pour les Reducers avec `TestStore`
-    - Tests pour les Services (FileService, ExportService, etc.)
+16. **Tests unitaires** _(partiellement fait)_
+    - [x] Tests pour les Helpers (FuzzyMatching, TokenUsage, Token)
+    - [x] Tests pour les Services (Suggestion, Comparison)
+    - [ ] Tests pour les Reducers avec `TestStore`
+    - [ ] Tests pour les autres Services (FileService, ExportService, History, Usage)
 
 17. **Tests UI**
     - Tests de snapshot pour les vues principales
