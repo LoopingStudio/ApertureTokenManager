@@ -252,6 +252,7 @@ struct UnifiedHistoryRow: View {
 
 // MARK: - Preview
 
+#if DEBUG
 #Preview {
   UnifiedHistoryView(
     items: [
@@ -285,3 +286,4 @@ struct UnifiedHistoryRow: View {
   .padding()
   .frame(width: 500)
 }
+#endif

@@ -44,6 +44,7 @@ struct AppView: View {
   }
 }
 
+#if DEBUG
 #Preview {
   AppView(
     store: Store(initialState: AppFeature.State()) {
@@ -51,3 +52,4 @@ struct AppView: View {
     }
   )
 }
+#endif

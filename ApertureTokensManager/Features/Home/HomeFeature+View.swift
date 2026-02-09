@@ -371,6 +371,7 @@ private struct ExportActionCard: View {
 
 // MARK: - Previews
 
+#if DEBUG
 #Preview("With Base") {
   HomeView(
     store: Store(initialState: HomeFeature.State(
@@ -400,3 +401,4 @@ private struct ExportActionCard: View {
   )
   .frame(width: 700, height: 500)
 }
+#endif

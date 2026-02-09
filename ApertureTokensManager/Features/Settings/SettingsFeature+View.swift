@@ -448,6 +448,7 @@ struct LogEntryRow: View {
 
 // MARK: - Preview
 
+#if DEBUG
 #Preview {
   SettingsView(
     store: Store(initialState: SettingsFeature.State.initial) {
@@ -455,3 +456,4 @@ struct LogEntryRow: View {
     }
   )
 }
+#endif

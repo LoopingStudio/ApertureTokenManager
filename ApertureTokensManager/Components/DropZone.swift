@@ -335,6 +335,7 @@ private struct BaseBadge: View {
   }
 }
 
+#if DEBUG
 #Preview {
   VStack(spacing: 20) {
     // État normal
@@ -386,3 +387,4 @@ private struct BaseBadge: View {
   .padding()
   .frame(width: 400)
 }
+#endif
