@@ -1,5 +1,129 @@
 import SwiftUI
 
+// MARK: - Compatible Glass Button Styles
+
+/// Configuration for adaptive glass button style
+public struct AdaptiveGlassConfiguration {
+  let tintColor: Color?
+  
+  public static let regular = AdaptiveGlassConfiguration(tintColor: nil)
+  
+  public func tint(_ color: Color) -> AdaptiveGlassConfiguration {
+    AdaptiveGlassConfiguration(tintColor: color)
+  }
+}
+
+/// A button style that uses Liquid Glass on macOS 26+ and falls back to bordered style on older versions
+public struct AdaptiveGlassButtonStyle: ButtonStyle {
+  let configuration: AdaptiveGlassConfiguration
+  
+  public init(_ configuration: AdaptiveGlassConfiguration = .regular) {
+    self.configuration = configuration
+  }
+  
+  public func makeBody(configuration: Configuration) -> some View {
+    if #available(macOS 26.0, *) {
+      if let tint = self.configuration.tintColor {
+        configuration.label
+          .buttonStyle(.glass(.regular.tint(tint)))
+      } else {
+        configuration.label
+          .buttonStyle(.glass(.regular))
+      }
+    } else {
+      // Fallback for macOS < 26
+      FallbackGlassButton(
+        configuration: configuration,
+        tintColor: self.configuration.tintColor
+      )
+    }
+  }
+}
+
+/// A button style that uses Liquid Glass Prominent on macOS 26+ and falls back to borderedProminent on older versions
+public struct AdaptiveGlassProminentButtonStyle: ButtonStyle {
+  public init() {}
+  
+  public func makeBody(configuration: Configuration) -> some View {
+    if #available(macOS 26.0, *) {
+      configuration.label
+        .buttonStyle(.glassProminent)
+    } else {
+      // Fallback for macOS < 26
+      FallbackGlassProminentButton(configuration: configuration)
+    }
+  }
+}
+
+// MARK: - Fallback Button Views
+
+private struct FallbackGlassButton: View {
+  let configuration: ButtonStyleConfiguration
+  let tintColor: Color?
+  
+  @State private var isHovering = false
+  
+  private var effectiveColor: Color {
+    tintColor ?? .accentColor
+  }
+  
+  var body: some View {
+    configuration.label
+      .padding(.horizontal, 12)
+      .padding(.vertical, 6)
+      .background(
+        RoundedRectangle(cornerRadius: 8)
+          .fill(effectiveColor.opacity(configuration.isPressed ? 0.2 : (isHovering ? 0.15 : 0.1)))
+      )
+      .overlay(
+        RoundedRectangle(cornerRadius: 8)
+          .stroke(effectiveColor.opacity(configuration.isPressed ? 0.5 : (isHovering ? 0.4 : 0.3)), lineWidth: 1)
+      )
+      .foregroundStyle(effectiveColor)
+      .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
+      .animation(.easeOut(duration: 0.15), value: configuration.isPressed)
+      .animation(.easeOut(duration: 0.15), value: isHovering)
+      .onHover { isHovering = $0 }
+  }
+}
+
+private struct FallbackGlassProminentButton: View {
+  let configuration: ButtonStyleConfiguration
+  
+  @State private var isHovering = false
+  
+  var body: some View {
+    configuration.label
+      .padding(.horizontal, 16)
+      .padding(.vertical, 8)
+      .background(
+        RoundedRectangle(cornerRadius: 8)
+          .fill(Color.accentColor.opacity(configuration.isPressed ? 0.9 : (isHovering ? 0.85 : 0.8)))
+      )
+      .foregroundStyle(.white)
+      .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
+      .animation(.easeOut(duration: 0.15), value: configuration.isPressed)
+      .animation(.easeOut(duration: 0.15), value: isHovering)
+      .onHover { isHovering = $0 }
+  }
+}
+
+// MARK: - ButtonStyle Extension
+
+public extension ButtonStyle where Self == AdaptiveGlassButtonStyle {
+  /// Adaptive glass button style - uses Liquid Glass on macOS 26+, falls back to custom style on older versions
+  static func adaptiveGlass(_ configuration: AdaptiveGlassConfiguration = .regular) -> AdaptiveGlassButtonStyle {
+    AdaptiveGlassButtonStyle(configuration)
+  }
+}
+
+public extension ButtonStyle where Self == AdaptiveGlassProminentButtonStyle {
+  /// Adaptive glass prominent button style - uses Liquid Glass on macOS 26+, falls back to custom style on older versions
+  static var adaptiveGlassProminent: AdaptiveGlassProminentButtonStyle {
+    AdaptiveGlassProminentButtonStyle()
+  }
+}
+
 // MARK: - Pressable Button Style
 
 /// A button style that provides press feedback with scale animation and optional icon bounce.

@@ -40,11 +40,11 @@ struct AnalysisView: View {
             } label: {
               Label("Exporter", systemImage: "square.and.arrow.up")
             }
-            .buttonStyle(.glass)
+            .buttonStyle(.adaptiveGlass())
             .controlSize(.small)
             
             Button("Nouvelle Analyse") { send(.clearResultsTapped) }
-              .buttonStyle(.glass)
+              .buttonStyle(.adaptiveGlass())
               .controlSize(.small)
           }
           .transition(.asymmetric(
@@ -172,7 +172,7 @@ struct AnalysisView: View {
             } label: {
               Text("Lancer l'analyse")
             }
-            .buttonStyle(.glassProminent)
+            .buttonStyle(.adaptiveGlassProminent)
             .controlSize(.large)
             .padding()
           }
@@ -208,7 +208,7 @@ struct AnalysisView: View {
           Button("Annuler") {
             onCancel()
           }
-          .buttonStyle(.glass(.regular.tint(.red)))
+          .buttonStyle(.adaptiveGlass(.regular.tint(.red)))
           .controlSize(.small)
         }
         

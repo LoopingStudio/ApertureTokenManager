@@ -30,7 +30,7 @@ struct ImportView: View {
 
         if store.isFileLoaded {
           Button("Nouvel Import") { send(.resetFile) }
-            .buttonStyle(.glass)
+            .buttonStyle(.adaptiveGlass())
             .controlSize(.small)
           
           Button {
@@ -38,14 +38,14 @@ struct ImportView: View {
           } label: {
             Label("Définir comme base", systemImage: "checkmark.seal")
           }
-          .buttonStyle(.glass(.regular.tint(.green)))
+          .buttonStyle(.adaptiveGlass(.regular.tint(.green)))
           .controlSize(.small)
           .disabled(store.designSystemBase?.metadata == store.metadata)
           
           Button("Exporter Design System") {
             send(.exportButtonTapped)
           }
-          .buttonStyle(.glassProminent)
+          .buttonStyle(.adaptiveGlassProminent)
           .controlSize(.small)
         }
       }

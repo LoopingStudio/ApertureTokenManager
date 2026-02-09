@@ -35,10 +35,10 @@ struct CompareView: View {
         if store.changes != nil {
           HStack(spacing: 8) {
             Button("Nouvelle Comparaison") { send(.resetComparison) }
-              .buttonStyle(.glass)
+              .buttonStyle(.adaptiveGlass())
               .controlSize(.small)
             Button("Exporter pour Notion") { send(.exportToNotionTapped) }
-              .buttonStyle(.glassProminent)
+              .buttonStyle(.adaptiveGlassProminent)
               .controlSize(.small)
           }
           .transition(.asymmetric(
@@ -123,7 +123,7 @@ struct CompareView: View {
           Button("Comparer les fichiers") {
             send(.compareButtonTapped)
           }
-          .buttonStyle(.glassProminent)
+          .buttonStyle(.adaptiveGlassProminent)
           .controlSize(.large)
           .offset(y: 48)
           .transition(.push(from: .top).combined(with: .opacity))

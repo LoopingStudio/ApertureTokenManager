@@ -224,7 +224,7 @@ struct SettingsView: View {
           } label: {
             Label("Ouvrir le dossier de données", systemImage: "folder")
           }
-          .buttonStyle(.glass(.regular))
+          .buttonStyle(.adaptiveGlass(.regular))
           .padding(.vertical, 8)
         }
         
@@ -253,7 +253,7 @@ struct SettingsView: View {
             } label: {
               Label("Réinitialiser", systemImage: "trash")
             }
-            .buttonStyle(.glass(.regular.tint(.red)))
+            .buttonStyle(.adaptiveGlass(.regular.tint(.red)))
           }
           .padding(.vertical, 8)
         }
@@ -288,7 +288,7 @@ struct SettingsView: View {
           } label: {
             Label("Actualiser", systemImage: "arrow.clockwise")
           }
-          .buttonStyle(.glass(.regular))
+          .buttonStyle(.adaptiveGlass(.regular))
           .disabled(store.isLoadingLogs)
           
           Button {
@@ -296,7 +296,7 @@ struct SettingsView: View {
           } label: {
             Label("Vider", systemImage: "trash")
           }
-          .buttonStyle(.glass(.regular.tint(.red)))
+          .buttonStyle(.adaptiveGlass(.regular.tint(.red)))
           .disabled(store.logEntries.isEmpty)
           
           Button {
@@ -304,7 +304,7 @@ struct SettingsView: View {
           } label: {
             Label("Exporter", systemImage: "square.and.arrow.up")
           }
-          .buttonStyle(.glass(.regular.tint(.blue)))
+          .buttonStyle(.adaptiveGlass(.regular.tint(.blue)))
           .disabled(store.logEntries.isEmpty || store.isExportingLogs)
         }
       }
