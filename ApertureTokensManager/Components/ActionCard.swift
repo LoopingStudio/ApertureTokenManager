@@ -124,7 +124,7 @@ struct ActionCard: View {
     }
     
     ActionCard(
-      title: "Comparer avec import",
+      title: "Comparer avec un nouvel import",
       subtitle: "Détecter les changements",
       icon: "doc.text.magnifyingglass",
       color: .green

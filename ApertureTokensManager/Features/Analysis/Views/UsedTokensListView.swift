@@ -3,6 +3,7 @@ import SwiftUI
 struct UsedTokensListView: View {
   let tokens: [UsedToken]
   let selectedToken: UsedToken?
+  var searchText: String = ""
   let onTokenTapped: (UsedToken?) -> Void
   
   var body: some View {
@@ -14,6 +15,7 @@ struct UsedTokensListView: View {
             TokenRow(
               token: token,
               isSelected: selectedToken?.id == token.id,
+              searchText: searchText,
               onTap: { onTokenTapped(token) }
             )
           }
@@ -57,20 +59,20 @@ struct UsedTokensListView: View {
 private struct TokenRow: View {
   let token: UsedToken
   let isSelected: Bool
+  var searchText: String = ""
   let onTap: () -> Void
   
   var body: some View {
     Button(action: onTap) {
       HStack {
         VStack(alignment: .leading, spacing: 4) {
-          Text(token.enumCase)
+          TokenTreeSearchHelper.highlightedText(token.enumCase, searchText: searchText, baseColor: .primary)
             .font(.system(.body, design: .monospaced))
             .fontWeight(.medium)
           
           if let path = token.originalPath {
-            Text(path)
+            TokenTreeSearchHelper.highlightedText(path, searchText: searchText, baseColor: .secondary)
               .font(.caption)
-              .foregroundStyle(.secondary)
           }
         }
         

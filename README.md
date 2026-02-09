@@ -34,12 +34,16 @@ Aperture Tokens Manager est l'application compagnon du plugin Figma **ApertureEx
 - **Détection automatique** : Identifie les tokens ajoutés, supprimés et modifiés
 - **Suggestions intelligentes** : Fuzzy matching pour suggérer des remplacements
 - **Score de confiance** : Couleur indicative (vert >70%, orange 50-70%, gris <50%)
+- **Diff visuel des couleurs** : Badge cliquable montrant l'amplitude du changement (Minimal/Subtil/Modéré/Majeur) avec détails HSL
 - **Export Notion** : Génération de Markdown pour documentation
 
 ### 📊 Analyse d'Utilisation
 - **Scan de projets** : Analyser plusieurs dossiers Swift
 - **Tokens utilisés** : Liste avec occurrences (fichier, ligne, contexte)
 - **Tokens orphelins** : Tokens non utilisés groupés par catégorie
+- **Progression en temps réel** : Barre de progression avec nombre de fichiers scannés
+- **Annulation** : Possibilité d'annuler un scan en cours
+- **Scan parallélisé** : Performance optimisée avec TaskGroup
 - **Persistance** : Les dossiers scannés sont mémorisés entre les sessions
 - **Patterns détectés** : `.tokenName`, `Color.tokenName`, `.color(.tokenName)`
 
@@ -49,6 +53,13 @@ Aperture Tokens Manager est l'application compagnon du plugin Figma **ApertureEx
 - **Structure hiérarchique** : Respect de l'organisation de vos tokens
 - **Support multi-thèmes** : Gestion des variantes (legacy, newBrand × light, dark)
 - **Filtrage intelligent** : Exportez uniquement les tokens activés
+
+### ⚙️ Paramètres
+- **Filtres d'export** : Configurer les exclusions (tokens #, _hover, groupe Utility)
+- **Historique** : Limiter le nombre d'entrées conservées (5-50)
+- **Données** : Accès au dossier de stockage, reset complet
+- **Logs** : Journal d'activité consultable et exportable
+- **À propos** : Informations sur l'application
 
 ## 🚀 Installation
 
@@ -148,7 +159,7 @@ ApertureTokensManager/
 │   ├── TokenTree.swift           # Arborescence de tokens
 │   └── UnifiedHistoryView.swift  # Timeline d'historique
 ├── Extensions/                   # Extensions Swift
-│   ├── Color+Hex.swift           # Conversion hex ↔ Color
+│   ├── Color+Hex.swift           # Conversion hex ↔ Color + ColorDelta
 │   ├── SharedKeys.swift          # Clés @Shared pour persistance
 │   └── String+Date.swift         # Formatage de dates
 ├── Features/                     # Features TCA
@@ -157,6 +168,7 @@ ApertureTokensManager/
 │   ├── Import/                   # Import et export de tokens
 │   ├── Compare/                  # Comparaison de versions
 │   ├── Analysis/                 # Analyse d'utilisation
+│   ├── Settings/                 # Paramètres de l'application
 │   └── TokenBrowser/             # Navigation dans les tokens
 ├── Helpers/                      # Utilitaires
 │   ├── TokenHelpers.swift        # Manipulation de tokens

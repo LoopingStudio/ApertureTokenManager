@@ -1,5 +1,6 @@
 import ComposableArchitecture
 import Foundation
+import UniformTypeIdentifiers
 
 extension AnalysisFeature {
   func handleViewAction(_ action: Action.View, state: inout State) -> EffectOf<Self> {
@@ -44,6 +45,11 @@ extension AnalysisFeature {
       }
       return .send(.analytics(.directoryRemoved))
       
+    case .cancelAnalysisTapped:
+      state.isAnalyzing = false
+      state.scanProgress = nil
+      return .cancel(id: CancelID.analysis)
+      
     case .startAnalysisTapped:
       guard state.canStartAnalysis, let tokens = state.designSystemBase?.tokens else {
         return .none
@@ -52,6 +58,7 @@ extension AnalysisFeature {
       state.isAnalyzing = true
       state.analysisError = nil
       state.report = nil
+      state.scanProgress = .initial
       
       let directoryCount = state.directoriesToScan.count
       let tokenCount = TokenHelpers.countLeafTokens(tokens)
@@ -60,12 +67,19 @@ extension AnalysisFeature {
         .send(.analytics(.analysisStarted(directoryCount: directoryCount, tokenCount: tokenCount))),
         .run { [directories = state.directoriesToScan, config = state.config, filters = state.tokenFilters] send in
           do {
-            let report = try await usageClient.analyzeUsage(directories, tokens, config, filters)
+            let report = try await usageClient.analyzeUsage(directories, tokens, config, filters) { progress in
+              Task { @MainActor in
+                await send(.internal(.progressUpdated(progress)))
+              }
+            }
             await send(.internal(.analysisCompleted(report)))
+          } catch is CancellationError {
+            // Cancelled by user, don't report as error
           } catch {
             await send(.internal(.analysisFailed(error.localizedDescription)))
           }
         }
+        .cancellable(id: CancelID.analysis, cancelInFlight: true)
       )
       
     case .tabTapped(let tab):
@@ -83,6 +97,16 @@ extension AnalysisFeature {
     case .usedTokenTapped(let token):
       state.selectedUsedToken = token
       return .none
+      
+    case .exportReportTapped:
+      guard let report = state.report else { return .none }
+      
+      let markdown = AnalysisReportFormatter.formatAsMarkdown(report)
+      let defaultName = "analyse-tokens-\(Date().formatted(.dateTime.year().month().day())).md"
+      
+      return .run { send in
+        _ = try? await fileClient.saveTextFile(markdown, defaultName, "Exporter le rapport", nil, .markdown)
+      }
     }
   }
 }

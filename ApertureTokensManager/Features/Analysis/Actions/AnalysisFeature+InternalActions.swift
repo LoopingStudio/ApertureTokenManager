@@ -6,6 +6,7 @@ extension AnalysisFeature {
     switch action {
     case .analysisCompleted(let report):
       state.isAnalyzing = false
+      state.scanProgress = nil
       state.report = report
       state.analysisError = nil
       return .send(.analytics(.analysisCompleted(
@@ -16,8 +17,13 @@ extension AnalysisFeature {
       
     case .analysisFailed(let error):
       state.isAnalyzing = false
+      state.scanProgress = nil
       state.analysisError = error
       return .send(.analytics(.analysisFailed(error: error)))
+      
+    case .progressUpdated(let progress):
+      state.scanProgress = progress
+      return .none
       
     case .directoryPicked(let url, let bookmarkData):
       let directory = ScanDirectory(

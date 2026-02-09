@@ -95,12 +95,12 @@ actor FileService {
   }
   
   @MainActor
-  func saveTextFile(content: String, defaultName: String, title: String, message: String? = nil) async throws -> URL? {
+  func saveTextFile(content: String, defaultName: String, title: String, message: String? = nil, contentType: UTType = .plainText) async throws -> URL? {
     logger.debug("Opening save panel for text file: \(defaultName)")
     let savePanel = NSSavePanel()
     savePanel.title = title
     savePanel.nameFieldStringValue = defaultName
-    savePanel.allowedContentTypes = [.plainText]
+    savePanel.allowedContentTypes = [contentType]
     savePanel.canCreateDirectories = true
     if let message { savePanel.message = message }
     

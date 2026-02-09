@@ -136,7 +136,7 @@
 
 - [x] Créer `Logger.swift` - `AppLogger` enum avec loggers par catégorie (Import, Compare, Analysis, Export, etc.)
 - [x] Créer `LogEvent` struct pour événements structurés (userAction, systemEvent, error, performance)
-- [x] Créer `LoggingService` actor avec toute la logique de logging
+- [x] Créer `LoggingService` actor avec toute la logique de logging + buffer circulaire (1000 entrées)
 - [x] Créer `LoggingClient` TCA avec `liveValue`, `testValue`, `previewValue`
 - [x] Ajouter actions `Analytics` dans tous les reducers (Import, Compare, Analysis, Home)
 - [x] Créer fichiers `*+AnalyticsActions.swift` pour chaque feature
@@ -144,6 +144,61 @@
 - [x] Build et vérification
 
 **Résultat**: Système de logging complet avec OSLog, actions Analytics séparées dans chaque reducer (conformité TCA), et logging automatique dans tous les services.
+
+---
+
+### [2026-02-09] Feature: Page Settings
+
+- [x] Créer `SettingsFeature` avec State, Actions, Reducer
+- [x] Créer `SettingsFeature+View` avec NavigationSplitView
+- [x] Section **Export** - Filtres d'export (tokens #, _hover, groupe Utility)
+- [x] Section **Historique** - Configuration max entrées (stepper 5-50)
+- [x] Section **Données** - Ouvrir dossier + reset complet avec confirmation
+- [x] Section **Logs** - Journal d'activité avec export vers fichier
+- [x] Section **À propos** - Infos de l'app
+- [x] Intégrer dans `AppFeature` via bouton gear dans toolbar
+- [x] Refactorer pour utiliser `FileClient.saveTextFile` (pas de duplication NSSavePanel)
+- [x] Build et vérification
+
+**Résultat**: Page Settings complète accessible depuis toutes les pages via le bouton gear. Permet de configurer les filtres d'export, l'historique, consulter/exporter les logs, et reset les données.
+
+---
+
+### [2026-02-09] Feature: Diff visuel des couleurs modifiées
+
+- [x] Créer `ColorDelta` struct avec calcul HSL (hueDelta, saturationDelta, lightnessDelta, magnitude)
+- [x] Créer `ColorDeltaCalculator` avec conversion hex → RGB → HSL
+- [x] Ajouter classification (Minimal/Subtil/Modéré/Majeur) basée sur la magnitude
+- [x] Créer `ColorDeltaBadge` composant avec popover détaillé
+- [x] Intégrer dans `ModifiedTokensView` - badge cliquable à droite de chaque changement
+- [x] Build et vérification
+
+**Résultat**: Dans l'onglet "Modifiés" de la comparaison, chaque changement de couleur affiche un badge coloré (Minimal/Subtil/Modéré/Majeur). Clic sur le badge montre le détail : Luminosité +X%, Saturation +X%, Teinte +X°.
+
+---
+
+### [2026-02-09] Feature: Progression et annulation pour l'analyse
+
+- [x] Créer `ScanProgress` model avec phase, filesScanned, totalFiles
+- [x] Mettre à jour `UsageService` avec callback `onProgress` et `Task.checkCancellation()`
+- [x] Paralléliser le scan avec `TaskGroup` (batches de 50 fichiers)
+- [x] Throttler les updates de progression (max toutes les 50ms)
+- [x] Ajouter `CancelID.analysis` dans `AnalysisFeature`
+- [x] Ajouter action `cancelAnalysisTapped` et `progressUpdated`
+- [x] Créer `ScanProgressView` avec barre de progression et bouton Annuler
+- [x] Petit délai à 100% pour voir la complétion
+- [x] Build et vérification
+
+**Résultat**: L'analyse affiche maintenant une barre de progression en temps réel ("145 / 892 fichiers - 16%") avec possibilité d'annuler. Le scan est parallélisé pour de meilleures performances.
+
+---
+
+### [2026-02-09] UI: Unification des dates dans l'accueil
+
+- [x] Ajouter extension `Date.shortFormatted` (format `dd/MM/yy`)
+- [x] Unifier les StatCards "Défini le" et "Exporté le" avec le même format
+
+**Résultat**: Les dates dans les cards de l'accueil sont maintenant cohérentes.
 
 ---
 
@@ -190,18 +245,9 @@ _Aucune tâche en cours_
    - Clic sur la notification → ouvrir l'app sur l'onglet concerné
    - Utile quand l'app est en arrière-plan pendant un export long
 
-9. ~~**Historique unifié dans Accueil**~~ ✅ _Fait le 2026-02-08_
-
 ---
 
 ### 🚀 Nouvelles Features (Plus complexe)
-
-10. **Diff visuel des couleurs modifiées**
-    - Dans ModifiedTokensView, afficher les couleurs old/new côte à côte
-    - Mini preview : `[██ #FF0000] → [██ #FF5500]`
-    - Animation hover : morphing progressif de l'ancienne vers la nouvelle couleur
-    - Calcul du delta : "Rouge +10%, Luminosité -5%"
-    - Utile pour valider visuellement si le changement est intentionnel
 
 11. **Export vers Figma Variables**
     - Générer un fichier JSON compatible avec l'import Figma Variables

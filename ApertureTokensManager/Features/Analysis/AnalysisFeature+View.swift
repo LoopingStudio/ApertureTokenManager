@@ -5,6 +5,7 @@ import ComposableArchitecture
 struct AnalysisView: View {
   @Bindable var store: StoreOf<AnalysisFeature>
   @Namespace private var tabNamespace
+  @FocusState private var isSearchFocused: Bool
 
   var body: some View {
     VStack(spacing: 0) {
@@ -33,13 +34,23 @@ struct AnalysisView: View {
         Spacer()
 
         if store.report != nil {
-          Button("Nouvelle Analyse") { send(.clearResultsTapped) }
+          HStack(spacing: 8) {
+            Button {
+              send(.exportReportTapped)
+            } label: {
+              Label("Exporter", systemImage: "square.and.arrow.up")
+            }
             .buttonStyle(.glass)
             .controlSize(.small)
-            .transition(.asymmetric(
-              insertion: .scale(scale: 0.9).combined(with: .opacity),
-              removal: .opacity
-            ))
+            
+            Button("Nouvelle Analyse") { send(.clearResultsTapped) }
+              .buttonStyle(.glass)
+              .controlSize(.small)
+          }
+          .transition(.asymmetric(
+            insertion: .scale(scale: 0.9).combined(with: .opacity),
+            removal: .opacity
+          ))
         }
       }
 
@@ -142,27 +153,89 @@ struct AnalysisView: View {
         .frame(maxWidth: 600)
       }
       
-      // Start Button (fixed at bottom)
-      if store.canStartAnalysis {
-        VStack {
+      // Start Button or Progress (fixed at bottom)
+      if store.canStartAnalysis || store.isAnalyzing {
+        VStack(spacing: 0) {
           Divider()
-          Button {
-            send(.startAnalysisTapped)
-          } label: {
-            if store.isAnalyzing {
-              ProgressView()
-                .controlSize(.small)
-                .padding(.horizontal, 8)
+          
+          if store.isAnalyzing, let progress = store.scanProgress {
+            // Progress View
+            ScanProgressView(
+              progress: progress,
+              onCancel: { send(.cancelAnalysisTapped) }
+            )
+            .padding()
+          } else {
+            // Start Button
+            Button {
+              send(.startAnalysisTapped)
+            } label: {
+              Text("Lancer l'analyse")
             }
-            Text(store.isAnalyzing ? "Analyse en cours..." : "Lancer l'analyse")
+            .buttonStyle(.glassProminent)
+            .controlSize(.large)
+            .padding()
           }
-          .buttonStyle(.glassProminent)
-          .controlSize(.large)
-          .disabled(store.isAnalyzing)
-          .padding()
         }
         .background(.bar)
       }
+    }
+  }
+  
+  // MARK: - Scan Progress View
+  
+  struct ScanProgressView: View {
+    let progress: ScanProgress
+    let onCancel: () -> Void
+    
+    var body: some View {
+      VStack(spacing: 12) {
+        // Phase and directory
+        HStack {
+          VStack(alignment: .leading, spacing: 4) {
+            Text(progress.phase.rawValue)
+              .font(.headline)
+            
+            if !progress.currentDirectory.isEmpty {
+              Text(progress.currentDirectory)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            }
+          }
+          
+          Spacer()
+          
+          Button("Annuler") {
+            onCancel()
+          }
+          .buttonStyle(.glass(.regular.tint(.red)))
+          .controlSize(.small)
+        }
+        
+        // Progress bar
+        VStack(spacing: 4) {
+          ProgressView(value: progress.progress)
+            .progressViewStyle(.linear)
+          
+          HStack {
+            Text("\(progress.filesScanned) / \(progress.totalFiles) fichiers")
+              .font(.caption)
+              .foregroundStyle(.secondary)
+            
+            Spacer()
+            
+            Text(progress.percentFormatted)
+              .font(.caption)
+              .fontWeight(.medium)
+              .monospacedDigit()
+          }
+        }
+      }
+      .padding()
+      .background(
+        RoundedRectangle(cornerRadius: 12)
+          .fill(Color(nsColor: .controlBackgroundColor))
+      )
     }
   }
   
@@ -194,6 +267,22 @@ struct AnalysisView: View {
   private var analysisContent: some View {
     VStack(spacing: 0) {
       tabs
+      
+      // Search field (only for list tabs)
+      if store.selectedTab != .overview {
+        HStack {
+          SearchField(
+            text: $store.searchText,
+            placeholder: searchPlaceholder,
+            resultCount: searchResultCount,
+            totalCount: searchTotalCount,
+            isFocused: $isSearchFocused
+          )
+        }
+        .padding(.horizontal)
+        .padding(.vertical, 8)
+      }
+      
       Divider()
       if let report = store.report {
         tabContent(for: store.selectedTab, report: report)
@@ -203,6 +292,33 @@ struct AnalysisView: View {
       }
     }
     .animation(.spring(response: 0.35, dampingFraction: 0.85), value: store.selectedTab)
+    .searchFocusShortcut($isSearchFocused)
+  }
+  
+  private var searchPlaceholder: String {
+    switch store.selectedTab {
+    case .overview: "Rechercher..."
+    case .used: "Rechercher un token ou fichier..."
+    case .orphaned: "Rechercher un token ou catégorie..."
+    }
+  }
+  
+  private var searchResultCount: Int? {
+    guard !store.searchText.isEmpty else { return nil }
+    switch store.selectedTab {
+    case .overview: return nil
+    case .used: return store.filteredUsedTokens.count
+    case .orphaned: return store.filteredOrphanedTokens.count
+    }
+  }
+  
+  private var searchTotalCount: Int? {
+    guard !store.searchText.isEmpty else { return nil }
+    switch store.selectedTab {
+    case .overview: return nil
+    case .used: return store.report?.usedTokens.count
+    case .orphaned: return store.report?.orphanedTokens.count
+    }
   }
 
   // MARK: - Tabs
@@ -263,15 +379,17 @@ struct AnalysisView: View {
 
     case .used:
       UsedTokensListView(
-        tokens: report.usedTokens,
+        tokens: store.filteredUsedTokens,
         selectedToken: store.selectedUsedToken,
+        searchText: store.searchText,
         onTokenTapped: { send(.usedTokenTapped($0)) }
       )
 
     case .orphaned:
       OrphanedTokensListView(
-        tokens: report.orphanedTokens,
+        tokens: store.filteredOrphanedTokens,
         expandedCategories: store.expandedOrphanCategories,
+        searchText: store.searchText,
         onToggleCategory: { send(.toggleOrphanCategory($0)) }
       )
     }

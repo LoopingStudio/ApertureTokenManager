@@ -1,5 +1,6 @@
 import ComposableArchitecture
 import Foundation
+import UniformTypeIdentifiers
 
 extension SettingsFeature {
   func handleInternalAction(_ action: Action.Internal, state: inout State) -> Effect<Action> {
@@ -18,7 +19,8 @@ extension SettingsFeature {
           content,
           fileName,
           "Exporter les logs",
-          "Choisissez où enregistrer le fichier de logs"
+          "Choisissez où enregistrer le fichier de logs",
+          .plainText
         ) {
           await fileClient.openInFinder(url)
         }

@@ -48,6 +48,32 @@ public struct CompareFeature: Sendable {
     
     // UI State
     var selectedTab: ComparisonTab = .overview
+    var searchText: String = ""
+    
+    // Filtered results based on search
+    var filteredAdded: [TokenSummary] {
+      guard let changes, !searchText.isEmpty else { return changes?.added ?? [] }
+      let query = searchText.lowercased()
+      return changes.added.filter {
+        $0.name.lowercased().contains(query) || $0.path.lowercased().contains(query)
+      }
+    }
+    
+    var filteredRemoved: [TokenSummary] {
+      guard let changes, !searchText.isEmpty else { return changes?.removed ?? [] }
+      let query = searchText.lowercased()
+      return changes.removed.filter {
+        $0.name.lowercased().contains(query) || $0.path.lowercased().contains(query)
+      }
+    }
+    
+    var filteredModified: [TokenModification] {
+      guard let changes, !searchText.isEmpty else { return changes?.modified ?? [] }
+      let query = searchText.lowercased()
+      return changes.modified.filter {
+        $0.tokenName.lowercased().contains(query) || $0.tokenPath.lowercased().contains(query)
+      }
+    }
     
     public static var initial: Self {
       .init(

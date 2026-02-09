@@ -31,7 +31,6 @@ struct HomeView: View {
   
   // MARK: - Header
   
-  @ViewBuilder
   private var header: some View {
     HStack {
       Text("Accueil")
@@ -63,8 +62,7 @@ struct HomeView: View {
   }
   
   // MARK: - Empty State
-  
-  @ViewBuilder
+
   private var emptyBaseContent: some View {
     VStack(spacing: UIConstants.Spacing.large) {
       ZStack {
@@ -127,8 +125,7 @@ struct HomeView: View {
   }
   
   // MARK: - Design System Base Content
-  
-  @ViewBuilder
+
   private func designSystemBaseContent(_ base: DesignSystemBase) -> some View {
     ScrollView {
       VStack(spacing: UIConstants.Spacing.large) {
@@ -173,8 +170,7 @@ struct HomeView: View {
       }
     }
   }
-  
-  @ViewBuilder
+
   private func headerCard(_ base: DesignSystemBase) -> some View {
     HStack(spacing: UIConstants.Spacing.medium) {
       ZStack {
@@ -225,8 +221,7 @@ struct HomeView: View {
         )
     )
   }
-  
-  @ViewBuilder
+
   private func statsSection(_ base: DesignSystemBase) -> some View {
     HStack(spacing: UIConstants.Spacing.medium) {
       StatCard(
@@ -251,15 +246,14 @@ struct HomeView: View {
       StatCard(
         title: "Exporté le",
         value: base.metadata.exportedAt.toShortDate(),
-        subtitle: "par \(base.metadata.generator)",
+        subtitle: "avec \(base.metadata.generator)",
         color: .purple,
         icon: "arrow.up.doc.fill"
       )
       .staggeredAppear(index: 2)
     }
   }
-  
-  @ViewBuilder
+
   private var actionsSection: some View {
     VStack(alignment: .leading, spacing: UIConstants.Spacing.medium) {
       Text("Actions rapides")
@@ -271,7 +265,7 @@ struct HomeView: View {
           .staggeredAppear(index: 0, duration: 0.4)
         
         ActionCard(
-          title: "Comparer avec import",
+          title: "Comparer avec un nouvel import",
           subtitle: "Détecter les changements",
           icon: "doc.text.magnifyingglass",
           color: .green

@@ -4,6 +4,7 @@ struct RemovedTokensView: View {
   let tokens: [TokenSummary]
   let changes: ComparisonChanges?
   let newVersionTokens: [TokenNode]?
+  var searchText: String = ""
   let onSuggestReplacement: (String, String?) -> Void
   let onAcceptAutoSuggestion: (String) -> Void
   let onRejectAutoSuggestion: (String) -> Void
@@ -16,6 +17,7 @@ struct RemovedTokensView: View {
             token: token,
             changes: changes,
             newVersionTokens: newVersionTokens,
+            searchText: searchText,
             onSuggestReplacement: onSuggestReplacement,
             onAcceptAutoSuggestion: onAcceptAutoSuggestion,
             onRejectAutoSuggestion: onRejectAutoSuggestion
@@ -32,6 +34,7 @@ struct RemovedTokenListItem: View {
   let token: TokenSummary
   let changes: ComparisonChanges?
   let newVersionTokens: [TokenNode]?
+  var searchText: String = ""
   let onSuggestReplacement: (String, String?) -> Void
   let onAcceptAutoSuggestion: (String) -> Void
   let onRejectAutoSuggestion: (String) -> Void
@@ -56,7 +59,7 @@ struct RemovedTokenListItem: View {
   var body: some View {
     HStack(alignment: .top, spacing: 12) {
       VStack(alignment: .leading, spacing: 4) {
-        TokenInfoHeader(name: token.name, path: token.path)
+        TokenInfoHeader(name: token.name, path: token.path, searchText: searchText)
 
         ReplacementSection(
           removedToken: token,

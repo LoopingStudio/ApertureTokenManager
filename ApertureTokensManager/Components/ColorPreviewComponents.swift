@@ -198,17 +198,25 @@ extension View {
 struct TokenInfoHeader: View {
   let name: String
   let path: String
+  var searchText: String = ""
 
   var body: some View {
     VStack(alignment: .leading, spacing: 4) {
-      Text(name)
+      highlightedName
         .font(.subheadline)
         .fontWeight(.medium)
 
-      Text(path)
+      highlightedPath
         .font(.caption)
-        .foregroundStyle(.secondary)
     }
+  }
+  
+  private var highlightedName: Text {
+    TokenTreeSearchHelper.highlightedText(name, searchText: searchText, baseColor: .primary)
+  }
+  
+  private var highlightedPath: Text {
+    TokenTreeSearchHelper.highlightedText(path, searchText: searchText, baseColor: .secondary)
   }
 }
 

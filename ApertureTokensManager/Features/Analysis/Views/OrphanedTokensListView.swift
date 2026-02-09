@@ -3,6 +3,7 @@ import SwiftUI
 struct OrphanedTokensListView: View {
   let tokens: [OrphanedToken]
   let expandedCategories: Set<String>
+  var searchText: String = ""
   let onToggleCategory: (String) -> Void
   
   private var groupedTokens: [(String, [OrphanedToken])] {
@@ -39,7 +40,8 @@ struct OrphanedTokensListView: View {
             CategorySection(
               category: category,
               tokens: categoryTokens,
-              isExpanded: expandedCategories.contains(category),
+              isExpanded: expandedCategories.contains(category) || !searchText.isEmpty,
+              searchText: searchText,
               onToggle: { onToggleCategory(category) }
             )
           }
@@ -74,6 +76,7 @@ private struct CategorySection: View {
   let category: String
   let tokens: [OrphanedToken]
   let isExpanded: Bool
+  var searchText: String = ""
   let onToggle: () -> Void
   
   var body: some View {
@@ -109,7 +112,7 @@ private struct CategorySection: View {
       if isExpanded {
         VStack(spacing: 4) {
           ForEach(tokens) { token in
-            OrphanedTokenRow(token: token)
+            OrphanedTokenRow(token: token, searchText: searchText)
           }
         }
         .padding(.leading, 24)
@@ -123,19 +126,19 @@ private struct CategorySection: View {
 
 private struct OrphanedTokenRow: View {
   let token: OrphanedToken
+  var searchText: String = ""
   @State private var isCopied = false
   
   var body: some View {
     HStack {
       VStack(alignment: .leading, spacing: 4) {
-        Text(token.enumCase)
+        TokenTreeSearchHelper.highlightedText(token.enumCase, searchText: searchText, baseColor: .primary)
           .font(.system(.body, design: .monospaced))
           .fontWeight(.medium)
         
         if let path = token.originalPath {
-          Text(path)
+          TokenTreeSearchHelper.highlightedText(path, searchText: searchText, baseColor: .secondary)
             .font(.caption)
-            .foregroundStyle(.secondary)
         }
       }
       

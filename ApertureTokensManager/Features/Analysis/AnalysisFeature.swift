@@ -9,6 +9,12 @@ public struct AnalysisFeature: Sendable {
   @Dependency(\.loggingClient) var loggingClient
   @Dependency(\.usageClient) var usageClient
 
+  // MARK: - Cancel IDs
+  
+  enum CancelID: Hashable {
+    case analysis
+  }
+
   // MARK: - State
   
   @ObservableState
@@ -30,10 +36,33 @@ public struct AnalysisFeature: Sendable {
     
     // UI State
     var isAnalyzing: Bool = false
+    var scanProgress: ScanProgress?
     var analysisError: String?
     var selectedTab: AnalysisTab = .overview
     var expandedOrphanCategories: Set<String> = []
     var selectedUsedToken: UsedToken?
+    var searchText: String = ""
+    
+    // Filtered results based on search
+    var filteredUsedTokens: [UsedToken] {
+      guard let report, !searchText.isEmpty else { return report?.usedTokens ?? [] }
+      let query = searchText.lowercased()
+      return report.usedTokens.filter {
+        $0.enumCase.lowercased().contains(query) ||
+        ($0.originalPath?.lowercased().contains(query) ?? false) ||
+        $0.usages.contains { $0.filePath.lowercased().contains(query) }
+      }
+    }
+    
+    var filteredOrphanedTokens: [OrphanedToken] {
+      guard let report, !searchText.isEmpty else { return report?.orphanedTokens ?? [] }
+      let query = searchText.lowercased()
+      return report.orphanedTokens.filter {
+        $0.enumCase.lowercased().contains(query) ||
+        ($0.originalPath?.lowercased().contains(query) ?? false) ||
+        $0.category.lowercased().contains(query)
+      }
+    }
     
     // Computed
     var hasTokensLoaded: Bool {
@@ -83,12 +112,15 @@ public struct AnalysisFeature: Sendable {
       case analysisCompleted(TokenUsageReport)
       case analysisFailed(String)
       case directoryPicked(URL, Data?)
+      case progressUpdated(ScanProgress)
     }
 
     @CasePathable
     public enum View: Sendable, Equatable {
       case addDirectoryTapped
+      case cancelAnalysisTapped
       case clearResultsTapped
+      case exportReportTapped
       case onAppear
       case removeDirectory(UUID)
       case startAnalysisTapped

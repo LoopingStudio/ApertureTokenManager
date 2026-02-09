@@ -147,7 +147,7 @@ actor ComparisonService {
     _ = try await fileClient.saveToFile(
       data,
       "comparison-export-notion.md", 
-      .plainText,
+      .markdown,
       "Exporter la comparaison pour Notion"
     )
   }

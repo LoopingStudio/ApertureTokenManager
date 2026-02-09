@@ -1,5 +1,53 @@
 import Foundation
 
+// MARK: - Scan Progress
+
+/// Progression du scan en cours
+public struct ScanProgress: Equatable, Sendable {
+  /// Nom du dossier en cours de scan
+  public let currentDirectory: String
+  
+  /// Nombre de fichiers scannés
+  public let filesScanned: Int
+  
+  /// Nombre total de fichiers à scanner
+  public let totalFiles: Int
+  
+  /// Phase actuelle du scan
+  public let phase: Phase
+  
+  /// Pourcentage de progression (0-1)
+  public var progress: Double {
+    guard totalFiles > 0 else { return 0 }
+    return Double(filesScanned) / Double(totalFiles)
+  }
+  
+  /// Pourcentage formaté
+  public var percentFormatted: String {
+    "\(Int(progress * 100))%"
+  }
+  
+  public enum Phase: String, Sendable, Equatable {
+    case discovering = "Recherche des fichiers..."
+    case scanning = "Analyse en cours..."
+    case processing = "Traitement des résultats..."
+  }
+  
+  public init(currentDirectory: String, filesScanned: Int, totalFiles: Int, phase: Phase) {
+    self.currentDirectory = currentDirectory
+    self.filesScanned = filesScanned
+    self.totalFiles = totalFiles
+    self.phase = phase
+  }
+  
+  public static let initial = ScanProgress(
+    currentDirectory: "",
+    filesScanned: 0,
+    totalFiles: 0,
+    phase: .discovering
+  )
+}
+
 // MARK: - Usage Analysis Models
 
 /// Rapport complet d'analyse d'utilisation des tokens

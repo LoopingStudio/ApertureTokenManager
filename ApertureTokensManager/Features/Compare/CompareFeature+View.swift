@@ -6,6 +6,7 @@ import UniformTypeIdentifiers
 struct CompareView: View {
   @Bindable var store: StoreOf<CompareFeature>
   @Namespace private var tabNamespace
+  @FocusState private var isSearchFocused: Bool
 
   var body: some View {
     VStack(spacing: 0) {
@@ -150,19 +151,50 @@ struct CompareView: View {
   private var comparisonContent: some View {
     VStack(spacing: 0) {
       tabs
+      
+      // Search field (only for list tabs)
+      if store.selectedTab != .overview {
+        SearchField(
+          text: $store.searchText,
+          placeholder: "Rechercher un token...",
+          resultCount: filteredCountForCurrentTab,
+          totalCount: totalCountForCurrentTab,
+          isFocused: $isSearchFocused
+        )
+        .padding(.horizontal)
+        .padding(.bottom, 8)
+      }
+      
       Divider()
       if let changes = store.changes {
         tabContent(for: store.selectedTab, changes: changes)
           .padding()
           .id(store.selectedTab)
           .transition(.opacity.combined(with: .scale(scale: 0.95)))
-//          .transition(.asymmetric(
-//            insertion: .opacity.combined(with: .move(edge: .trailing)),
-//            removal: .opacity.combined(with: .move(edge: .leading))
-//          ))
       }
     }
     .animation(.spring(response: 0.35, dampingFraction: 0.85), value: store.selectedTab)
+    .searchFocusShortcut($isSearchFocused)
+  }
+  
+  private var filteredCountForCurrentTab: Int? {
+    guard !store.searchText.isEmpty else { return nil }
+    switch store.selectedTab {
+    case .overview: return nil
+    case .added: return store.filteredAdded.count
+    case .removed: return store.filteredRemoved.count
+    case .modified: return store.filteredModified.count
+    }
+  }
+  
+  private var totalCountForCurrentTab: Int? {
+    guard !store.searchText.isEmpty else { return nil }
+    switch store.selectedTab {
+    case .overview: return nil
+    case .added: return store.changes?.added.count
+    case .removed: return store.changes?.removed.count
+    case .modified: return store.changes?.modified.count
+    }
   }
 
   // MARK: - Tabs
@@ -227,13 +259,14 @@ struct CompareView: View {
       )
 
     case .added:
-      AddedTokensView(tokens: changes.added)
+      AddedTokensView(tokens: store.filteredAdded, searchText: store.searchText)
 
     case .removed:
       RemovedTokensView(
-        tokens: changes.removed,
+        tokens: store.filteredRemoved,
         changes: store.changes,
         newVersionTokens: store.newFile.tokens,
+        searchText: store.searchText,
         onSuggestReplacement: { removedPath, replacementPath in
           send(.suggestReplacement(removedTokenPath: removedPath, replacementTokenPath: replacementPath))
         },
@@ -247,8 +280,9 @@ struct CompareView: View {
 
     case .modified:
       ModifiedTokensView(
-        modifications: changes.modified,
-        newVersionTokens: store.newFile.tokens
+        modifications: store.filteredModified,
+        newVersionTokens: store.newFile.tokens,
+        searchText: store.searchText
       )
     }
   }

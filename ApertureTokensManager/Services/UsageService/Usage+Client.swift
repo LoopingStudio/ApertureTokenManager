@@ -4,13 +4,14 @@ import Foundation
 
 @DependencyClient
 struct UsageClient: Sendable {
-  /// Analyse l'utilisation des tokens dans les dossiers spécifiés
+  /// Analyse l'utilisation des tokens dans les dossiers spécifiés avec callback de progression
   var analyzeUsage: @Sendable (
     _ directories: [ScanDirectory],
     _ exportedTokens: [TokenNode],
     _ config: UsageAnalysisConfig,
-    _ tokenFilters: TokenFilters
-  ) async throws -> TokenUsageReport = { _, _, _, _ in .empty }
+    _ tokenFilters: TokenFilters,
+    _ onProgress: @escaping @Sendable (ScanProgress) -> Void
+  ) async throws -> TokenUsageReport = { _, _, _, _, _ in .empty }
 }
 
 // MARK: - Dependency Key
@@ -20,23 +21,35 @@ extension UsageClient: DependencyKey {
     let service = UsageService()
     
     return Self(
-      analyzeUsage: { directories, tokens, config, tokenFilters in
+      analyzeUsage: { directories, tokens, config, tokenFilters, onProgress in
         try await service.analyzeUsage(
           directories: directories,
           exportedTokens: tokens,
           config: config,
-          tokenFilters: tokenFilters
+          tokenFilters: tokenFilters,
+          onProgress: onProgress
         )
       }
     )
   }()
   
   static let testValue: Self = Self(
-    analyzeUsage: { _, _, _, _ in .empty }
+    analyzeUsage: { _, _, _, _, _ in .empty }
   )
   
   static let previewValue: Self = Self(
-    analyzeUsage: { _, tokens, _, _ in
+    analyzeUsage: { _, tokens, _, _, onProgress in
+      // Simuler une progression
+      for i in 0...10 {
+        try? await Task.sleep(for: .milliseconds(100))
+        onProgress(ScanProgress(
+          currentDirectory: "Preview",
+          filesScanned: i * 10,
+          totalFiles: 100,
+          phase: .scanning
+        ))
+      }
+      
       // Générer des données de preview
       let allTokens = flattenTokens(tokens)
       let usedCount = min(allTokens.count / 2, 5)
