@@ -21,15 +21,14 @@ public struct AdaptiveGlassButtonStyle: ButtonStyle {
     self.configuration = configuration
   }
   
+  @ViewBuilder
   public func makeBody(configuration: Configuration) -> some View {
     if #available(macOS 26.0, *) {
-      if let tint = self.configuration.tintColor {
-        configuration.label
-          .buttonStyle(.glass(.regular.tint(tint)))
-      } else {
-        configuration.label
-          .buttonStyle(.glass(.regular))
-      }
+      GlassButtonContent(
+        label: configuration.label,
+        isPressed: configuration.isPressed,
+        tintColor: self.configuration.tintColor
+      )
     } else {
       // Fallback for macOS < 26
       FallbackGlassButton(
@@ -44,14 +43,59 @@ public struct AdaptiveGlassButtonStyle: ButtonStyle {
 public struct AdaptiveGlassProminentButtonStyle: ButtonStyle {
   public init() {}
   
+  @ViewBuilder
   public func makeBody(configuration: Configuration) -> some View {
     if #available(macOS 26.0, *) {
-      configuration.label
-        .buttonStyle(.glassProminent)
+      GlassProminentButtonContent(
+        label: configuration.label,
+        isPressed: configuration.isPressed
+      )
     } else {
       // Fallback for macOS < 26
       FallbackGlassProminentButton(configuration: configuration)
     }
+  }
+}
+
+// MARK: - Liquid Glass Button Views (macOS 26+)
+
+@available(macOS 26.0, *)
+private struct GlassButtonContent<Label: View>: View {
+  let label: Label
+  let isPressed: Bool
+  let tintColor: Color?
+  
+  var body: some View {
+    if let tint = tintColor {
+      label
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+        .glassEffect(.regular.tint(tint).interactive())
+        .scaleEffect(isPressed ? 0.97 : 1.0)
+        .animation(.easeOut(duration: 0.15), value: isPressed)
+    } else {
+      label
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+        .glassEffect(.regular.interactive())
+        .scaleEffect(isPressed ? 0.97 : 1.0)
+        .animation(.easeOut(duration: 0.15), value: isPressed)
+    }
+  }
+}
+
+@available(macOS 26.0, *)
+private struct GlassProminentButtonContent<Label: View>: View {
+  let label: Label
+  let isPressed: Bool
+  
+  var body: some View {
+    label
+      .padding(.horizontal, 16)
+      .padding(.vertical, 8)
+      .glassEffect(.regular.tint(.accentColor).interactive())
+      .scaleEffect(isPressed ? 0.97 : 1.0)
+      .animation(.easeOut(duration: 0.15), value: isPressed)
   }
 }
 

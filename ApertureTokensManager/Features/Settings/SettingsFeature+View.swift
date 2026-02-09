@@ -369,6 +369,14 @@ struct SettingsView: View {
       .font(.body)
       .foregroundStyle(.secondary)
       
+      // Tutorial button
+      Button {
+        send(.openTutorialButtonTapped)
+      } label: {
+        Label("Revoir le guide de démarrage", systemImage: "questionmark.circle")
+      }
+      .buttonStyle(.adaptiveGlass())
+      
       Spacer()
       
       Text("© 2026 Picta")

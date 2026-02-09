@@ -121,3 +121,25 @@ extension SharedKey where Self == FileStorageKey<AppSettings>.Default {
     Self[.fileStorage(.appSettings), default: AppSettings()]
   }
 }
+
+// MARK: - Onboarding State
+
+public struct OnboardingState: Equatable, Sendable, Codable {
+  public var hasCompletedTutorial: Bool = false
+  public var tutorialVersion: String = "1.0"
+  
+  public init(hasCompletedTutorial: Bool = false, tutorialVersion: String = "1.0") {
+    self.hasCompletedTutorial = hasCompletedTutorial
+    self.tutorialVersion = tutorialVersion
+  }
+}
+
+extension URL {
+  static let onboardingState = Self.documentsDirectory.appending(component: "onboarding-state.json")
+}
+
+extension SharedKey where Self == FileStorageKey<OnboardingState>.Default {
+  static var onboardingState: Self {
+    Self[.fileStorage(.onboardingState), default: OnboardingState()]
+  }
+}

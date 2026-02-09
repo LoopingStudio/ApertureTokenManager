@@ -1,5 +1,6 @@
 import ComposableArchitecture
 import Foundation
+import Sharing
 
 @Reducer
 struct AppFeature {
@@ -19,8 +20,12 @@ struct AppFeature {
     var compare: CompareFeature.State = .initial
     var analysis: AnalysisFeature.State = .initial
     
-    // Settings presentation
+    // Onboarding state (to check first launch)
+    @Shared(.onboardingState) var onboardingState: OnboardingState
+    
+    // Presentations
     @Presents var settings: SettingsFeature.State?
+    @Presents var tutorial: TutorialFeature.State?
   }
   
   enum Action {
@@ -29,8 +34,11 @@ struct AppFeature {
     case compare(CompareFeature.Action)
     case home(HomeFeature.Action)
     case importer(ImportFeature.Action)
+    case onAppear
     case settings(PresentationAction<SettingsFeature.Action>)
     case settingsButtonTapped
+    case tutorial(PresentationAction<TutorialFeature.Action>)
+    case tutorialButtonTapped
   }
   
   var body: some ReducerOf<Self> {
@@ -43,12 +51,39 @@ struct AppFeature {
       case .tabSelected(let tab):
         state.selectedTab = tab
         return .none
+        
+      // MARK: - Lifecycle
+      case .onAppear:
+        // Show tutorial on first launch
+        if !state.onboardingState.hasCompletedTutorial {
+          state.tutorial = .initial
+        }
+        return .none
+        
+      // MARK: - Tutorial
+      case .tutorialButtonTapped:
+        state.tutorial = .initial
+        return .none
+      case .tutorial(.presented(.delegate(.completed))):
+        state.tutorial = nil
+        return .none
+      case .tutorial(.presented(.delegate(.dismissed))):
+        state.tutorial = nil
+        return .none
+      case .tutorial:
+        return .none
+        
       // MARK: - Settings
       case .settingsButtonTapped:
         state.settings = .initial
         return .none
+      case .settings(.presented(.delegate(.openTutorial))):
+        state.settings = nil
+        state.tutorial = .initial
+        return .none
       case .settings:
         return .none
+        
       // MARK: - Home Delegate Actions
       case .home(.delegate(.compareWithBase(let tokens, let metadata))):
         state.selectedTab = .compare
@@ -64,15 +99,18 @@ struct AppFeature {
         return .send(.compare(.internal(.loadFromHistoryEntry(entry))))
       case .home:
         return .none
+        
       // MARK: - Import Delegate Actions
       case .importer(.delegate(.baseUpdated)):
         // Could trigger dashboard refresh if needed
         return .none
       case .importer:
         return .none
+        
       // MARK: - Analysis Actions
       case .analysis:
         return .none
+        
       // MARK: - Compare Actions
       case .compare:
         return .none
@@ -80,6 +118,9 @@ struct AppFeature {
     }
     .ifLet(\.$settings, action: \.settings) {
       SettingsFeature()
+    }
+    .ifLet(\.$tutorial, action: \.tutorial) {
+      TutorialFeature()
     }
   }
 }

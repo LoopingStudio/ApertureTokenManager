@@ -30,16 +30,31 @@ struct AppView: View {
     .frame(minWidth: 800, minHeight: 600)
     .toolbar {
       ToolbarItem(placement: .primaryAction) {
-        Button {
-          store.send(.settingsButtonTapped)
-        } label: {
-          Image(systemName: "gear")
+        HStack(spacing: 8) {
+          Button {
+            store.send(.tutorialButtonTapped)
+          } label: {
+            Image(systemName: "questionmark.circle")
+          }
+          .help("Guide de démarrage")
+          
+          Button {
+            store.send(.settingsButtonTapped)
+          } label: {
+            Image(systemName: "gear")
+          }
+          .help("Paramètres")
         }
-        .help("Paramètres")
       }
     }
     .sheet(item: $store.scope(state: \.settings, action: \.settings)) { settingsStore in
       SettingsView(store: settingsStore)
+    }
+    .sheet(item: $store.scope(state: \.tutorial, action: \.tutorial)) { tutorialStore in
+      TutorialView(store: tutorialStore)
+    }
+    .onAppear {
+      store.send(.onAppear)
     }
   }
 }

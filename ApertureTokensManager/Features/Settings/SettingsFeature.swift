@@ -48,8 +48,14 @@ struct SettingsFeature: Sendable {
   @CasePathable
   enum Action: BindableAction, ViewAction, Equatable, Sendable {
     case binding(BindingAction<State>)
+    case delegate(Delegate)
     case `internal`(Internal)
     case view(View)
+
+    @CasePathable
+    enum Delegate: Equatable, Sendable {
+      case openTutorial
+    }
 
     @CasePathable
     enum Internal: Equatable, Sendable {
@@ -65,6 +71,7 @@ struct SettingsFeature: Sendable {
       case exportLogsButtonTapped
       case onAppear
       case openDataFolderButtonTapped
+      case openTutorialButtonTapped
       case refreshLogsButtonTapped
       case resetAllDataButtonTapped
       case sectionSelected(SettingsSection)
@@ -78,6 +85,7 @@ struct SettingsFeature: Sendable {
     Reduce { state, action in
       switch action {
       case .binding: return .none
+      case .delegate: return .none
       case .internal(let action): return handleInternalAction(action, state: &state)
       case .view(let action): return handleViewAction(action, state: &state)
       }

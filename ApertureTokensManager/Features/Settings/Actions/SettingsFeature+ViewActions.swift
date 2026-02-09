@@ -51,6 +51,9 @@ extension SettingsFeature {
         await fileClient.openInFinder(documentsURL)
       }
       
+    case .openTutorialButtonTapped:
+      return .send(.delegate(.openTutorial))
+      
     case .refreshLogsButtonTapped:
       state.isLoadingLogs = true
       return .run { send in
