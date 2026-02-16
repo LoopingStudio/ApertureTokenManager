@@ -29,31 +29,49 @@ struct CheckForUpdatesView: View {
   }
 
   var body: some View {
-    Button("Check for Updates…", action: updater.checkForUpdates)
-      .disabled(!checkForUpdatesViewModel.canCheckForUpdates)
+    Button {
+      updater.checkForUpdates()
+    } label: {
+      Label("Check for Updates…", systemImage: "arrow.triangle.2.circlepath")
+    }
+    .disabled(!checkForUpdatesViewModel.canCheckForUpdates)
   }
 }
 
 @main
 struct ApertureTokensManagerApp: App {
   private let updaterController: SPUStandardUpdaterController
+  @State private var store = Store(initialState: AppFeature.State()) {
+    AppFeature()
+  }
+  
   init() {
     // If you want to start the updater manually, pass false to startingUpdater and call .startUpdater() later
     // This is where you can also pass an updater delegate if you need one
-    updaterController = SPUStandardUpdaterController(startingUpdater: true, updaterDelegate: nil, userDriverDelegate: nil)
+    updaterController = SPUStandardUpdaterController(
+      startingUpdater: true,
+      updaterDelegate: nil,
+      userDriverDelegate: nil
+    )
   }
+  
   var body: some Scene {
     WindowGroup {
-      AppView(
-        store: Store(initialState: AppFeature.State()) {
-          AppFeature()
-        }
-      )
-      .frame(minWidth: 900, minHeight: 650)
+      AppView(store: store)
+        .frame(minWidth: 900, minHeight: 650)
     }
     .commands {
       CommandGroup(after: .appInfo) {
         CheckForUpdatesView(updater: updaterController.updater)
+        
+        Divider()
+        
+        Button {
+          store.send(.settingsButtonTapped)
+        } label: {
+          Label("Settings…", systemImage: "gearshape")
+        }
+        .keyboardShortcut(",", modifiers: .command)
       }
     }
     .defaultSize(width: 1100, height: 750)
