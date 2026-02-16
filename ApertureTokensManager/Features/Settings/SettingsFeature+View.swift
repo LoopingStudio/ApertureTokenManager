@@ -1,5 +1,6 @@
 import ComposableArchitecture
 import SwiftUI
+import Sparkle
 
 // MARK: - Settings View
 
@@ -7,6 +8,7 @@ import SwiftUI
 struct SettingsView: View {
   @Bindable var store: StoreOf<SettingsFeature>
   @Environment(\.dismiss) private var dismiss
+  @Environment(\.updater) private var updater
   
   var body: some View {
     NavigationSplitView {
@@ -354,15 +356,15 @@ extension SettingsView {
     VStack(spacing: UIConstants.Spacing.section) {
       Spacer()
       
-      Image(systemName: "paintpalette.fill")
-        .font(.system(size: UIConstants.Size.colorSquare))
-        .foregroundStyle(.tint)
-      
+      Image(.icon)
+        .resizable()
+        .scaledToFit()
+        .frame(width: UIConstants.Size.colorSquare, height: UIConstants.Size.colorSquare)
       Text("Aperture Tokens Manager")
         .font(.title)
         .fontWeight(.bold)
       
-      Text("Version 1.0.0")
+      Text("Version \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?")")
         .font(.subheadline)
         .foregroundStyle(.secondary)
       
@@ -375,19 +377,26 @@ extension SettingsView {
       }
       .font(.body)
       .foregroundStyle(.secondary)
-      
-      Button {
-        send(.openTutorialButtonTapped)
-      } label: {
-        Label("Revoir le guide de démarrage", systemImage: "questionmark.circle")
+
+      HStack(spacing: UIConstants.Spacing.medium) {
+        Button {
+          send(.openTutorialButtonTapped)
+        } label: {
+          Label("Revoir le guide de démarrage", systemImage: "questionmark.circle")
+        }
+        .buttonStyle(.adaptiveGlass())
+
+        if let updater {
+          Button {
+            updater.checkForUpdates()
+          } label: {
+            Label("Rechercher des mises à jour…", systemImage: "arrow.triangle.2.circlepath")
+          }
+          .buttonStyle(.adaptiveGlass())
+        }
       }
-      .buttonStyle(.adaptiveGlass())
-      
+
       Spacer()
-      
-      Text("© 2026 Picta")
-        .font(.caption)
-        .foregroundStyle(.tertiary)
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity)
     .padding()

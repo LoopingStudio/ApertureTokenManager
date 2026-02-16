@@ -4,6 +4,19 @@ import ComposableArchitecture
 
 import Sparkle
 
+// MARK: - Sparkle Environment Key
+
+private struct UpdaterKey: EnvironmentKey {
+  static let defaultValue: SPUUpdater? = nil
+}
+
+extension EnvironmentValues {
+  var updater: SPUUpdater? {
+    get { self[UpdaterKey.self] }
+    set { self[UpdaterKey.self] = newValue }
+  }
+}
+
 // This view model class publishes when new updates can be checked by the user
 final class CheckForUpdatesViewModel: ObservableObject {
   @Published var canCheckForUpdates = false
@@ -23,8 +36,6 @@ struct CheckForUpdatesView: View {
 
   init(updater: SPUUpdater) {
     self.updater = updater
-
-    // Create our view model for our CheckForUpdatesView
     self.checkForUpdatesViewModel = CheckForUpdatesViewModel(updater: updater)
   }
 
@@ -46,8 +57,6 @@ struct ApertureTokensManagerApp: App {
   }
   
   init() {
-    // If you want to start the updater manually, pass false to startingUpdater and call .startUpdater() later
-    // This is where you can also pass an updater delegate if you need one
     updaterController = SPUStandardUpdaterController(
       startingUpdater: true,
       updaterDelegate: nil,
@@ -58,9 +67,11 @@ struct ApertureTokensManagerApp: App {
   var body: some Scene {
     WindowGroup {
       AppView(store: store)
+        .environment(\.updater, updaterController.updater)
         .frame(minWidth: 900, minHeight: 650)
     }
     .commands {
+      // MARK: - App Menu
       CommandGroup(after: .appInfo) {
         CheckForUpdatesView(updater: updaterController.updater)
         
@@ -77,6 +88,96 @@ struct ApertureTokensManagerApp: App {
           store.send(.tutorialButtonTapped)
         } label: {
           Label("Tutorial", systemImage: "questionmark.circle")
+        }
+      }
+      
+      // MARK: - File Menu
+      CommandGroup(after: .newItem) {
+        Button {
+          store.send(.menu(.importTokens))
+        } label: {
+          Label("Import Tokens…", systemImage: "square.and.arrow.down")
+        }
+        .keyboardShortcut("o", modifiers: .command)
+        
+        Button {
+          store.send(.menu(.exportToXcode))
+        } label: {
+          Label("Export to Xcode…", systemImage: "square.and.arrow.up")
+        }
+        .keyboardShortcut("e", modifiers: .command)
+        .disabled(!store.canExport)
+      }
+      
+      // MARK: - Edit Menu (Filters)
+      CommandMenu("Filters") {
+        Toggle(isOn: Binding(
+          get: { store.tokenFilters.excludeTokensStartingWithHash },
+          set: { _ in store.send(.menu(.toggleFilterHash)) }
+        )) {
+          Label("Exclude Tokens Starting with #", systemImage: "number")
+        }
+        
+        Toggle(isOn: Binding(
+          get: { store.tokenFilters.excludeTokensEndingWithHover },
+          set: { _ in store.send(.menu(.toggleFilterHover)) }
+        )) {
+          Label("Exclude Tokens Ending with _hover", systemImage: "cursorarrow.motionlines")
+        }
+        
+        Toggle(isOn: Binding(
+          get: { store.tokenFilters.excludeUtilityGroup },
+          set: { _ in store.send(.menu(.toggleFilterUtility)) }
+        )) {
+          Label("Exclude Utility Group", systemImage: "folder.badge.minus")
+        }
+      }
+      
+      // MARK: - View Menu (Navigation)
+      CommandGroup(after: .toolbar) {
+        Divider()
+        
+        Button {
+          store.send(.tabSelected(.home))
+        } label: {
+          Label("Home", systemImage: "house")
+        }
+        .keyboardShortcut("1", modifiers: .command)
+        
+        Button {
+          store.send(.tabSelected(.analysis))
+        } label: {
+          Label("Analyser", systemImage: "magnifyingglass")
+        }
+        .keyboardShortcut("2", modifiers: .command)
+        
+        Button {
+          store.send(.tabSelected(.compare))
+        } label: {
+          Label("Comparer", systemImage: "arrow.left.arrow.right")
+        }
+        .keyboardShortcut("3", modifiers: .command)
+        
+        Button {
+          store.send(.tabSelected(.importer))
+        } label: {
+          Label("Importer", systemImage: "square.and.arrow.down")
+        }
+        .keyboardShortcut("4", modifiers: .command)
+      }
+      
+      // MARK: - Help Menu
+      CommandGroup(replacing: .help) {
+        Link(destination: TutorialConstants.figmaPluginURL) {
+          Label("Figma Plugin", systemImage: "puzzlepiece.extension")
+        }
+        
+        Link(destination: URL(string: "https://loopingstudio.github.io/ApertureTokensManager/")!) {
+          Label("Documentation", systemImage: "book")
+        }
+        
+        Link(destination: URL(string: "https://github.com/LoopingStudio/ApertureTokensManager/issues/new")!) {
+          Label("Report an Issue…", systemImage: "exclamationmark.bubble")
         }
       }
     }
