@@ -5,7 +5,7 @@
 	<key>SUEnableInstallerLauncherService</key>
 	<true/>
 	<key>SUFeedURL</key>
-	<string>https://loopingstudio.github.io/ApertureTokenManager/appcast.xml</string>
+	<string>https://loopingstudio.github.io/ApertureTokenManager/Releases/appcast.xml</string>
 	<key>SUPublicEDKey</key>
 	<string>AO8KvH4ISg6LNcdRlUJCjRYzHasX7GEhSPee9Y8GA8I=</string>
 </dict>

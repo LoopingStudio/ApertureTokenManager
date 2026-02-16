@@ -72,6 +72,12 @@ struct ApertureTokensManagerApp: App {
           Label("Settings…", systemImage: "gearshape")
         }
         .keyboardShortcut(",", modifiers: .command)
+        
+        Button {
+          store.send(.tutorialButtonTapped)
+        } label: {
+          Label("Tutorial", systemImage: "questionmark.circle")
+        }
       }
     }
     .defaultSize(width: 1100, height: 750)
