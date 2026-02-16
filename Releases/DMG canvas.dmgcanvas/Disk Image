@@ -1,0 +1,75 @@
+{
+  "diskImage" : {
+    "appleID" : "kelian@looping-studio.com",
+    "autoopen" : true,
+    "background" : {
+      "color" : "{0.000000, 0.591881, 1.000000, 1.000000}",
+      "endingColor" : "{0.000000, 0.436854, 0.785226, 1.000000}",
+      "gradientAngle" : 299.58316040039062,
+      "layoutObjects" : [
+        {
+          "bounds" : "{{270, 162}, {60, 35}}",
+          "filePath" : "\/Users\/keliandaste\/Documents\/chevron.down.png",
+          "identifier" : "chevron.down",
+          "image" : "uyykwadfpt",
+          "layoutObjectType" : "image",
+          "relativeFilePath" : "..\/..\/..\/chevron.down.png",
+          "uid" : "uyykwadfpt"
+        }
+      ],
+      "type" : 2
+    },
+    "codeSigningIdentityString" : "191DB7E05812D095E0C5E9F9C8D1D830BBE6BE3D",
+    "defaultLicenseLanguage" : "Français",
+    "iconPreviewVisible" : false,
+    "iconSize" : 150,
+    "itemInfoVisible" : false,
+    "labelPosition" : 0,
+    "licenses" : [
+      {
+        "agreeButtonTitle" : "Accepter",
+        "disagreeButtonTitle" : "Refuser",
+        "language" : "Français",
+        "printButtonTitle" : "Imprimer",
+        "prompt" : "Si vous acceptez les termes de la présente licence, cliquez sur \"Accepter\" afin d'installer le logiciel. Si vous n'êtes pas d'accord avec les termes de la licence, cliquez sur \"Refuser\".",
+        "saveButtonTitle" : "Enregistrer...",
+        "systemLanguageID" : 1
+      }
+    ],
+    "nameFontSize" : 13,
+    "statusBarVisible" : false,
+    "suggestedDiskImageName" : "ApertureTokensManager.dmg",
+    "teamID" : "JFTEHE2V9R",
+    "toolbarVisible" : false,
+    "uid" : "bbgfmalfdu",
+    "validationScheme" : 2,
+    "viewLayout" : 0,
+    "volumeIcon" : "volumeIcon",
+    "volumeName" : "ApertureTokensManager",
+    "volumeSize" : 0,
+    "volumeSizeOption" : "Automatic",
+    "windowContentHeight" : 360,
+    "windowContents" : [
+      {
+        "filePath" : "\/Users\/keliandaste\/Documents\/ApertureTokenManagerUpdates\/1.0.5\/ApertureTokensManager.app",
+        "iconSize" : 100,
+        "invisible" : false,
+        "isAnAlias" : false,
+        "location" : "{153, 180}",
+        "relativeFilePath" : "..\/..\/..\/ApertureTokenManagerUpdates\/1.0.5\/ApertureTokensManager.app"
+      },
+      {
+        "filePath" : "\/Applications",
+        "iconSize" : 100,
+        "invisible" : false,
+        "isAnAlias" : true,
+        "location" : "{462, 180}",
+        "relativeFilePath" : "..\/..\/..\/..\/..\/..\/Applications"
+      }
+    ],
+    "windowContentWidth" : 600,
+    "windowLeft" : 200,
+    "windowTop" : 120
+  },
+  "version" : 4
+}
