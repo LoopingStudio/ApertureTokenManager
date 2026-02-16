@@ -5,11 +5,30 @@ import Sharing
 @Reducer
 struct AppFeature {
   
-  enum Tab: Equatable, Hashable {
+  enum Tab: Equatable, Hashable, CaseIterable {
     case home
     case importer
     case compare
     case analysis
+    
+    var index: Int {
+      switch self {
+      case .home: 1
+      case .importer: 2
+      case .compare: 3
+      case .analysis: 4
+      }
+    }
+    
+    init?(index: Int) {
+      switch index {
+      case 1: self = .home
+      case 2: self = .importer
+      case 3: self = .compare
+      case 4: self = .analysis
+      default: return nil
+      }
+    }
   }
   
   @ObservableState
@@ -20,15 +39,24 @@ struct AppFeature {
     var compare: CompareFeature.State = .initial
     var analysis: AnalysisFeature.State = .initial
     
+    // Filters (shared for menu access)
+    @Shared(.tokenFilters) var tokenFilters: TokenFilters
+    
     // Onboarding state (to check first launch)
     @Shared(.onboardingState) var onboardingState: OnboardingState
     
     // Presentations
     @Presents var settings: SettingsFeature.State?
     @Presents var tutorial: TutorialFeature.State?
+    
+    // Computed for menu state
+    var canExport: Bool {
+      importer.isFileLoaded
+    }
   }
   
-  enum Action {
+  enum Action: BindableAction {
+    case binding(BindingAction<State>)
     case tabSelected(Tab)
     case analysis(AnalysisFeature.Action)
     case compare(CompareFeature.Action)
@@ -39,17 +67,52 @@ struct AppFeature {
     case settingsButtonTapped
     case tutorial(PresentationAction<TutorialFeature.Action>)
     case tutorialButtonTapped
+    
+    // Menu actions
+    case menu(Menu)
+    
+    enum Menu {
+      case importTokens
+      case exportToXcode
+      case toggleFilterHash
+      case toggleFilterHover
+      case toggleFilterUtility
+    }
   }
   
   var body: some ReducerOf<Self> {
+    BindingReducer()
     Scope(state: \.analysis, action: \.analysis) { AnalysisFeature() }
     Scope(state: \.compare, action: \.compare) { CompareFeature() }
     Scope(state: \.home, action: \.home) { HomeFeature() }
     Scope(state: \.importer, action: \.importer) { ImportFeature() }
     Reduce { state, action in
       switch action {
+      case .binding:
+        return .none
+        
       case .tabSelected(let tab):
         state.selectedTab = tab
+        return .none
+        
+      // MARK: - Menu Actions
+      case .menu(.importTokens):
+        state.selectedTab = .importer
+        return .send(.importer(.view(.selectFileTapped)))
+        
+      case .menu(.exportToXcode):
+        return .send(.importer(.view(.exportButtonTapped)))
+        
+      case .menu(.toggleFilterHash):
+        state.$tokenFilters.withLock { $0.excludeTokensStartingWithHash.toggle() }
+        return .none
+        
+      case .menu(.toggleFilterHover):
+        state.$tokenFilters.withLock { $0.excludeTokensEndingWithHover.toggle() }
+        return .none
+        
+      case .menu(.toggleFilterUtility):
+        state.$tokenFilters.withLock { $0.excludeUtilityGroup.toggle() }
         return .none
         
       // MARK: - Lifecycle
